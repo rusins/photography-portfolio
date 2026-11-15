@@ -1,14 +1,8 @@
-import { fileURLToPath } from 'node:url';
-import { loadConfig } from '../config.ts';
 import { consoleLog } from '../log.ts';
 import { buildSite } from '../site/build.ts';
-import { exitUnlessLibraryIsFolder } from './libraryFolder.ts';
+import { loadBuildSetup, repoPath } from './setup.ts';
 
-const repoPath = (path: string) => fileURLToPath(new URL(`../../${path}`, import.meta.url));
-
-const configPath = process.argv[2] ?? repoPath('site.config.json');
-const config = await loadConfig(configPath);
-await exitUnlessLibraryIsFolder(config, configPath);
+const config = await loadBuildSetup(process.argv[2]);
 const outputPath = repoPath('site');
 console.log(`Building ${outputPath} from the Library at ${config.libraryPath}`);
 const summary = await buildSite({ config, outputPath, previewCachePath: repoPath('.preview-cache'), log: consoleLog });

@@ -45,8 +45,9 @@ The config file defaults to `site.config.json` in the repository folder.
 
 Two caches are kept in the repository folder (both git-ignored, both safe to delete; they are rebuilt, just slowly):
 
-- `.preview-cache/` holds the Previews between builds. A Preview is regenerated only when its Original changed, or
-  `previewSize` / `previewQuality` changed.
+- `.preview-cache/` holds the Previews between builds. A Preview is regenerated only when its Original changed, another
+  Original became the first one, or `previewSize` / `previewQuality` changed. Previews of Photo entries that are no
+  longer in the Library are removed from it.
 - `.publish-cache/hashes.json` holds the MD5 of every Library file, so `./publish` and `./pull` only read files that are
   new or modified since the last run.
 
@@ -59,7 +60,11 @@ Two caches are kept in the repository folder (both git-ignored, both safe to del
    case answer no and run `./pull` first), and asks `Delete these N files from R2? [y/N]`. Anything other than `y` or
    `yes` aborts the whole publish: nothing is changed in R2 or on the site.
 5. Uploads new and changed files to R2. Originals and Raw files are stored with a download name, so that "Download
-   Photo" saves e.g. `2023/Norway/Trondheim/photo.jpg` as `Raitis_Krikis-2023-Norway-Trondheim-photo.jpg`.
+   Photo" saves e.g. `2023/Norway/Trondheim/photo.jpg` as `Raitis_Krikis-2023-Norway-Trondheim-photo.jpg`. These are
+   uploaded four at a time; if any upload fails, the publish stops with an error before deleting or deploying anything.
+   Symbolic links in the Library are followed, so R2 gets the files they point to. Only changed files are uploaded, so
+   changing how download names are made in the code does not re-upload files that are already up to date in R2: they
+   keep the name they were uploaded with until their content changes.
 6. Deletes from R2 the files that are no longer in the Library.
 7. Deploys `./site` to the Cloudflare Pages project, on its production branch, so it goes live right away.
 8. Prints how many files were uploaded, unchanged and deleted, and the site's URL.
@@ -77,8 +82,8 @@ nix-shell               # optional: the commands start it themselves, but it is 
 ```
 
 `./build` and `./publish` print a warning for every broken Photo entry or Album they skip (an `info.json` that is
-not valid, a Photo entry without an Original, an Album file that is not UTF-8, duplicate IDs) and carry on without
-it.
+not valid, a Photo entry without an Original, an Album file that is not UTF-8, duplicate IDs, a Tag that cannot have
+a page) and carry on without it.
 
 The Library's old `sync.sh` (rsync to the old server) is obsolete: `./publish` replaces it. Delete it from the
 Library, or it is uploaded to R2 like every other file.
@@ -157,7 +162,9 @@ All fields are optional and can be left out, so `{}` is a valid `info.json`.
 ```
 
 - `time` is a local date and time: `YYYY-MM-DDTHH:MM`, with optional seconds and fractions of a second.
-- `tags` are the photo's Tags. Each Tag gets its own page at `/tag/<name>`.
+- `tags` are the photo's Tags. Each Tag gets its own page at `/tag/<name>`; a Tag may contain `/`, e.g.
+  `places/Riga` is at `/tag/places/Riga`. A Tag that is empty or has an empty, `.` or `..` part gets no page, with a
+  warning.
 - `time`, `cameraModel`, `aperture`, `focalLength`, `shutterSpeed` and `iso` are read from the first Original's Exif
   metadata when they are not in `info.json`. Write them only to override what the camera recorded.
 - A field of the wrong type (e.g. a number instead of a string) makes the whole `info.json` invalid, and the Photo
@@ -201,7 +208,7 @@ next to the download links.
 
 ## site.config.json
 
-Every key is required. Text values must be non-empty, numbers must be positive.
+Every key is required (`./build` needs only the first six). Text values must be non-empty, numbers must be positive.
 
 | Key | Meaning | Current value |
 |---|---|---|
@@ -365,4 +372,5 @@ npm run typecheck   # tsc
 ```
 
 `./publish` runs both before it builds anything. The code is in `src/` (`library/` reads the Library, `site/` writes
-the pages, `sync/` talks to R2 and Pages, `cli/` holds the commands' entry points); tests are in `test/`.
+the pages, `sync/` talks to R2 and Pages, `cli/` holds the commands' entry points and their shared setup); tests are
+in `test/`.

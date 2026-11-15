@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, stat, utimes, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { buildSite, type BuildSummary } from '../../src/site/build.ts';
 import type { SiteConfig } from '../../src/config.ts';
+import type { Log } from '../../src/log.ts';
 
 const exampleLibrary = fileURLToPath(new URL('../fixtures/example_data_dir', import.meta.url));
 
@@ -117,7 +118,7 @@ describe('buildSite Preview cache', () => {
         log: silentLog,
       });
     const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
-    return { originalPath, build };
+    return { libraryPath, originalPath, previewCachePath, build };
   }
 
   test('a touched but unchanged Original regenerates no Preview', async () => {
@@ -132,6 +133,41 @@ describe('buildSite Preview cache', () => {
     await build();
     await writeFile(originalPath, await solidJpeg(0));
     expect((await build()).previewsGenerated).toBe(1);
+  });
+
+  test('a new first Original regenerates the Preview, even with the same content as the old one', async () => {
+    const { libraryPath, originalPath, build } = await libraryWithOnePhoto();
+    await build();
+    await copyFile(originalPath, join(libraryPath, 'photo', 'photo-edited.jpg'));
+    expect((await build()).previewsGenerated).toBe(1);
+  });
+
+  test('removing the first Original regenerates the Preview from the next one, even with the same content', async () => {
+    const { libraryPath, originalPath, build } = await libraryWithOnePhoto();
+    const editedPath = join(libraryPath, 'photo', 'photo-edited.jpg');
+    await copyFile(originalPath, editedPath);
+    await build();
+    await rm(editedPath);
+    expect((await build()).previewsGenerated).toBe(1);
+  });
+
+  test('an empty Library builds without a Preview cache folder', async () => {
+    const libraryPath = await mkdtemp(join(tmpdir(), 'library-'));
+    const previewCachePath = join(await mkdtemp(join(tmpdir(), 'preview-cache-')), 'not yet made');
+    const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
+    const summary = await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log: silentLog });
+    expect(summary).toEqual({ photoEntries: 0, albums: 0, previewsGenerated: 0 });
+  });
+
+  test('Previews of Photo entries no longer in the Library are removed from the cache', async () => {
+    const { libraryPath, previewCachePath, build } = await libraryWithOnePhoto();
+    await mkdir(join(libraryPath, 'trip', 'gone'), { recursive: true });
+    await writeFile(join(libraryPath, 'trip', 'gone', 'info.json'), '{}');
+    await writeFile(join(libraryPath, 'trip', 'gone', 'gone.jpg'), await solidJpeg(9));
+    await build();
+    await rm(join(libraryPath, 'trip'), { recursive: true });
+    await build();
+    expect((await readdir(previewCachePath, { recursive: true })).toSorted()).toEqual(['photo.jpg', 'photo.jpg.source.json']);
   });
 });
 
@@ -154,7 +190,7 @@ describe('buildSite with a LICENSE, Tags and an Image ID with spaces and non-ASC
   });
 
   test('notes the license when the Library has a LICENSE file', () => {
-    expect(page).toContain('By downloading, you agree to the the <a href="/license">License Terms</a>');
+    expect(page).toContain('By downloading, you agree to the <a href="/license">License Terms</a>');
   });
 
   test('lists Tags as links to their pages', () => {
@@ -182,11 +218,13 @@ async function buildLibrary({
   photos = {},
   albums = {},
   license,
+  log = silentLog,
 }: {
   photos?: Record<string, object>;
   albums?: Record<string, string>;
   /** Contents of the Library's LICENSE file, if it has one. */
   license?: string;
+  log?: Log;
 }) {
   const libraryPath = await mkdtemp(join(tmpdir(), 'library-'));
   for (const [id, info] of Object.entries(photos)) {
@@ -201,7 +239,7 @@ async function buildLibrary({
   if (license !== undefined) await writeFile(join(libraryPath, 'LICENSE'), license);
   const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
   const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
-  await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log: silentLog });
+  await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log });
   return { readPage: (path: string) => readFile(join(outputPath, path), 'utf8') };
 }
 
@@ -346,6 +384,28 @@ describe('buildSite Tag pages', () => {
   });
 });
 
+describe('buildSite Tags with slashes', () => {
+  test('a Tag with a slash links to the page it is written to', async () => {
+    const { readPage } = await buildLibrary({ photos: { '/a': { tags: ['places/Rīga'] } } });
+    expect(await readPage('image/a.html')).toContain('<a class="pure-menu-link" href="/tag/places/R%C4%ABga">places/Rīga</a>');
+    expect(photoBoxIds(await readPage('tag/places/Rīga.html'))).toEqual(['/a']);
+  });
+
+  test('Tags that are empty or have empty, . or .. parts get no page, with a warning', async () => {
+    const warnings: string[] = [];
+    const { readPage } = await buildLibrary({
+      photos: { '/a': { tags: ['', '..', '../index', 'x/./y', 'x//y', 'ok'] } },
+      log: { warn: (message) => warnings.push(message) },
+    });
+    expect(warnings).toEqual(['Tags that cannot have a page of their own, skipped: "", "..", "../index", "x/./y", "x//y"']);
+    expect(await readPage('index.html')).toContain('<meta property="og:url" content="https://photos.example">');
+    expect(await readPage('tags.html')).toContain(
+      '<ul class="pure-menu-list"><li class="pure-menu-item"><a class="pure-menu-link" href="/tag/ok">ok</a></li></ul>',
+    );
+    await expect(readPage('tag/x/y.html')).rejects.toThrow('ENOENT');
+  });
+});
+
 describe('buildSite Tags page', () => {
   test('lists every Tag once, sorted ignoring case, as links to their pages', async () => {
     const { readPage } = await buildLibrary({
@@ -396,11 +456,11 @@ describe('buildSite sitemap and robots.txt', () => {
   beforeAll(async () => {
     ({ readPage } = await buildLibrary({
       photos: { '/2023/Zvārtes Iezis': { tags: ['autumn'] }, '/b': {} },
-      albums: { 'Trips.album': '/b', '2023/Latvia & more.album': 'Zvārtes Iezis' },
+      albums: { 'Trips.album': '/b', '2023/Latvia & more.album': 'Zvārtes Iezis', 'Empty.album': '/nothing' },
     }));
   });
 
-  test('the sitemap lists the main pages without /random, then every Album and Photo entry page', async () => {
+  test('the sitemap lists the main pages without /random, then every non-empty Album and every Photo entry page', async () => {
     const sitemap = await readPage('sitemap.xml');
     const locs = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
     expect(locs.slice(0, 4)).toEqual([

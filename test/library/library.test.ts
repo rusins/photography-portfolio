@@ -64,7 +64,7 @@ describe('Library', () => {
     expect(library.entries).toEqual([norwayAlbum, img('/Norway/Oslo')]);
     expect(library.orphans).toEqual([norwayAlbum]);
     expect(warnings).toEqual([
-      'Duplicate album entries detected! Please check for duplicates for the following IDs: /Norway',
+      'Duplicate IDs (Photo entries or Albums), keeping the first: /Norway',
     ]);
   });
 });

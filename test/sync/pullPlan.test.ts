@@ -29,6 +29,25 @@ describe('planPull', () => {
     expect(planPull(local, remote, { force: true }).overwrites).toEqual(['a/b.jpg']);
   });
 
+  test('without force, files only the Library has are untouched while others are downloaded or reported', () => {
+    const local = [
+      { path: 'new/info.json', size: 2, md5: 'aa' },
+      { path: 'new/photo.jpg', size: 5, md5: 'bb' },
+      { path: 'a/info.json', size: 2, md5: 'new' },
+    ];
+    const remote = [
+      { path: 'a/info.json', size: 2, md5: 'old' },
+      { path: 'b/info.json', size: 2, md5: 'cc' },
+    ];
+    expect(planPull(local, remote, { force: false })).toEqual({
+      downloads: ['b/info.json'],
+      overwrites: [],
+      conflicts: ['a/info.json'],
+      unchanged: [],
+      localOnly: ['new/info.json', 'new/photo.jpg'],
+    });
+  });
+
   test.each([false, true])('leaves a file only the Library has alone (force: %s)', (force) => {
     const plan = planPull([{ path: 'new/info.json', size: 2, md5: 'aa' }], [], { force });
     expect(plan).toEqual({ downloads: [], overwrites: [], conflicts: [], unchanged: [], localOnly: ['new/info.json'] });

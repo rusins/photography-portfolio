@@ -17,10 +17,13 @@ interface ListedObject {
   Hashes?: { md5?: string };
 }
 
+/** How many files with download names are uploaded at a time, each by its own rclone. */
+const parallelUploads = 4;
+
 /** The R2 bucket, through rclone. */
 export class RcloneRemote implements Remote {
-  readonly settings: RcloneSettings;
-  readonly runner: ProcessRunner;
+  private readonly settings: RcloneSettings;
+  private readonly runner: ProcessRunner;
 
   constructor(settings: RcloneSettings, runner: ProcessRunner) {
     this.settings = settings;
@@ -48,28 +51,50 @@ export class RcloneRemote implements Remote {
     }));
   }
 
-  /** `--ignore-times` because the plan already decided these differ, even if size and time match. */
+  /**
+   * `--ignore-times` because the plan already decided these differ, even if size and time match.
+   * `--copy-links` because the Library is listed following symbolic links.
+   */
   async upload(uploads: Upload[]): Promise<void> {
     const plainPaths = uploads.filter((upload) => upload.contentDisposition === undefined).map((upload) => upload.path);
     if (plainPaths.length > 0) {
       await this.runner.run(
         'rclone',
-        ['copy', '--verbose', '--ignore-times', '--no-traverse', '--files-from-raw', '-', this.settings.libraryPath, this.bucketPath()],
+        ['copy', '--verbose', '--ignore-times', '--copy-links', '--no-traverse', '--files-from-raw', '-', this.settings.libraryPath, this.bucketPath()],
         plainPaths.map((path) => `${path}\n`).join(''),
       );
     }
-    for (const { path, contentDisposition } of uploads) {
-      if (contentDisposition === undefined) continue;
-      await this.runner.run('rclone', [
-        'copyto',
-        '--verbose',
-        '--ignore-times',
-        '--header-upload',
-        `Content-Disposition: ${contentDisposition}`,
-        join(this.settings.libraryPath, path),
-        this.bucketPath(path),
-      ]);
+    const queue = uploads.flatMap(({ path, contentDisposition }) => (contentDisposition === undefined ? [] : [{ path, contentDisposition }]));
+    let failure: { path: string; error: unknown } | undefined;
+    const uploadFromQueue = async () => {
+      while (failure === undefined) {
+        const next = queue.shift();
+        if (next === undefined) return;
+        try {
+          await this.uploadWithHeader(next.path, next.contentDisposition);
+        } catch (error) {
+          failure ??= { path: next.path, error };
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: parallelUploads }, uploadFromQueue));
+    if (failure !== undefined) {
+      const reason = failure.error instanceof Error ? failure.error.message : String(failure.error);
+      throw new Error(`Could not upload ${failure.path} to R2: ${reason}`, { cause: failure.error });
     }
+  }
+
+  private async uploadWithHeader(path: string, contentDisposition: string): Promise<void> {
+    await this.runner.run('rclone', [
+      'copyto',
+      '--verbose',
+      '--ignore-times',
+      '--copy-links',
+      '--header-upload',
+      `Content-Disposition: ${contentDisposition}`,
+      join(this.settings.libraryPath, path),
+      this.bucketPath(path),
+    ]);
   }
 
   /** `--ignore-times` because the plan already decided these differ, even if size and time match. */

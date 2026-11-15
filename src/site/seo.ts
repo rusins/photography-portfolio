@@ -5,9 +5,12 @@ import { albumPageUrl, imagePageUrl } from './urls.ts';
 /** The main pages, as listed in the old sitemap, without `/random`. */
 const mainPages = ['', '/recent', '/albums', '/tags'];
 
-/** `sitemap.xml`: the main pages, every Album page and every Photo entry page. */
+/** `sitemap.xml`: the main pages, every Album page except those of empty Albums, and every Photo entry page. */
 export function sitemap(library: Library, siteUrl: string): string {
-  const entryPages = library.entries.map((entry) => (entry.kind === 'album' ? albumPageUrl(entry.id) : imagePageUrl(entry.id)));
+  const entryPages = library.entries.flatMap((entry) => {
+    if (entry.kind === 'photo') return [imagePageUrl(entry.id)];
+    return library.children.has(entry.id) ? [albumPageUrl(entry.id)] : [];
+  });
   const urls = [...mainPages, ...entryPages].map(
     (path) => `  <url>\n    <loc>${escapeHtml(siteUrl + path)}</loc>\n    <changefreq>monthly</changefreq>\n  </url>`,
   );

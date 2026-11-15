@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { mkdir, readdir, readFile, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 
 export interface PreviewSettings {
@@ -14,6 +14,8 @@ export interface PreviewSettings {
 /** Stored next to a cached Preview: what it was made from. */
 interface PreviewSource {
   settings: PreviewSettings;
+  /** The Original's path within the Library. */
+  original: string;
   originalSha1: string;
   /** Lets an unchanged Original be recognised without reading all of it. */
   originalSize: number;
@@ -21,35 +23,54 @@ interface PreviewSource {
 }
 
 /**
- * Makes sure `previewPath` holds a Preview of the Original, generating it only when it is missing,
- * the settings changed, or the Original's content changed.
+ * Makes sure `previewPath` holds a Preview of the Original at `original` within the Library, generating it only
+ * when it is missing, the settings changed, it was made from another Original, or the Original's content changed.
  * @returns whether a Preview was generated
  */
-export async function updatePreview(originalPath: string, previewPath: string, settings: PreviewSettings): Promise<boolean> {
-  const sourcePath = `${previewPath}.source.json`;
+export async function updatePreview(
+  libraryPath: string,
+  original: string,
+  previewPath: string,
+  settings: PreviewSettings,
+): Promise<boolean> {
+  const originalPath = join(libraryPath, original);
+  const sourcePath = sourcePathOf(previewPath);
   const cached = await readPreviewSource(previewPath, sourcePath);
-  const original = await stat(originalPath);
-  const source: PreviewSource = {
-    settings,
-    originalSha1: '',
-    originalSize: original.size,
-    originalModifiedMs: original.mtimeMs,
-  };
-
-  const settingsMatch =
-    cached !== undefined && cached.settings.size === settings.size && cached.settings.quality === settings.quality;
-  if (settingsMatch && cached.originalSize === source.originalSize && cached.originalModifiedMs === source.originalModifiedMs) {
+  const { size: originalSize, mtimeMs: originalModifiedMs } = await stat(originalPath);
+  const sameOriginal =
+    cached !== undefined &&
+    cached.original === original &&
+    cached.settings.size === settings.size &&
+    cached.settings.quality === settings.quality;
+  if (sameOriginal && cached.originalSize === originalSize && cached.originalModifiedMs === originalModifiedMs) {
     return false;
   }
-  source.originalSha1 = await sha1Of(originalPath);
-  if (settingsMatch && cached.originalSha1 === source.originalSha1) {
-    await writePreviewSource(sourcePath, source);
-    return false;
-  }
+  const originalSha1 = await sha1Of(originalPath);
+  const generate = !sameOriginal || cached.originalSha1 !== originalSha1;
+  if (generate) await generatePreview(originalPath, previewPath, settings);
+  await writePreviewSource(sourcePath, { settings, original, originalSha1, originalSize, originalModifiedMs });
+  return generate;
+}
 
-  await generatePreview(originalPath, previewPath, settings);
-  await writePreviewSource(sourcePath, source);
-  return true;
+/** Removes from the cache everything but these Previews and their sources, and the folders left empty. */
+export async function prunePreviewCache(previewCachePath: string, keptPreviewPaths: string[]): Promise<void> {
+  const kept = new Set(keptPreviewPaths.flatMap((path) => [path, sourcePathOf(path)]));
+  await mkdir(previewCachePath, { recursive: true });
+  const entries = await readdir(previewCachePath, { recursive: true, withFileTypes: true });
+  const folders: string[] = [];
+  for (const entry of entries) {
+    const path = join(entry.parentPath, entry.name);
+    if (entry.isDirectory()) folders.push(path);
+    else if (!kept.has(path)) await rm(path);
+  }
+  // Deepest first, so a folder whose sub-folders were removed is empty by the time it is checked.
+  for (const folder of folders.toSorted((a, b) => b.length - a.length)) {
+    if ((await readdir(folder)).length === 0) await rmdir(folder);
+  }
+}
+
+function sourcePathOf(previewPath: string): string {
+  return `${previewPath}.source.json`;
 }
 
 async function generatePreview(originalPath: string, previewPath: string, settings: PreviewSettings): Promise<void> {

@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 if ! command -v node >/dev/null || ! command -v rclone >/dev/null || ! command -v wrangler >/dev/null; then
-  exec nix-shell --run "./publish $*"
+  exec nix-shell --run "$(printf '%q ' ./publish "$@")"
 fi
 [ -d node_modules ] || npm ci
 echo "Type checking and testing"

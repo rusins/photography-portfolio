@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 if ! command -v node >/dev/null; then
-  exec nix-shell --run "./build $*"
+  exec nix-shell --run "$(printf '%q ' ./build "$@")"
 fi
 [ -d node_modules ] || npm ci
 node src/cli/build.ts "$@"
