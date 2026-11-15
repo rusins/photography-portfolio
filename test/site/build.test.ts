@@ -456,11 +456,11 @@ describe('buildSite sitemap and robots.txt', () => {
   beforeAll(async () => {
     ({ readPage } = await buildLibrary({
       photos: { '/2023/Zvārtes Iezis': { tags: ['autumn'] }, '/b': {} },
-      albums: { 'Trips.album': '/b', '2023/Latvia & more.album': 'Zvārtes Iezis' },
+      albums: { 'Trips.album': '/b', '2023/Latvia & more.album': 'Zvārtes Iezis', 'Empty.album': '/nothing' },
     }));
   });
 
-  test('the sitemap lists the main pages without /random, then every Album and Photo entry page', async () => {
+  test('the sitemap lists the main pages without /random, then every non-empty Album and every Photo entry page', async () => {
     const sitemap = await readPage('sitemap.xml');
     const locs = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
     expect(locs.slice(0, 4)).toEqual([
