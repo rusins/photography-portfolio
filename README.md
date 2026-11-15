@@ -241,7 +241,7 @@ Every key is required (`./build` needs only the first six). Text values must be 
 | `previewSize` | Length in pixels of a Preview's longest side. Smaller Originals are not enlarged. | `2560` |
 | `previewQuality` | JPEG quality of Previews, from 0 to 1. | `0.7` |
 | `rcloneRemote` | Name of the rclone remote for R2 in your `rclone.conf`. | `r2` |
-| `r2Bucket` | Name of the R2 bucket that mirrors the Library. | `portfolio-files` |
+| `r2Bucket` | Name of the R2 bucket that mirrors the Library. | `photography-portfolio` |
 | `pagesProject` | Name of the Cloudflare Pages project. | `portfolio` |
 | `pagesBranch` | The Pages project's production branch, so a deploy goes live instead of becoming a preview. | `main` |
 
@@ -257,7 +257,7 @@ and wrangler config.
 
 ## One-time Cloudflare setup
 
-This is done once. It assumes you have never used Cloudflare. The names below (`portfolio-files`, `r2`, `portfolio`,
+This is done once. It assumes you have never used Cloudflare. The names below (`photography-portfolio`, `r2`, `portfolio`,
 `main`) are the ones in `site.config.json`; if you pick others, change the config to match.
 
 ### 1. Create a Cloudflare account
@@ -280,7 +280,7 @@ a site in your Cloudflare account:
 
 1. In the dashboard, open **R2 Object Storage**. The first time, Cloudflare asks you to enable R2 and add a payment
    method. That is required even though usage stays mostly within the free tier (see [Cost](#cost)).
-2. **Create bucket**, named `portfolio-files` (the `r2Bucket` value). Leave the location on automatic and the storage
+2. **Create bucket**, named `photography-portfolio` (the `r2Bucket` value). Leave the location on automatic and the storage
    class on Standard.
 3. Open the bucket, go to **Settings → Custom Domains → Add**, enter `files.raitis.krikis.id.lv`, and confirm.
    Cloudflare creates the DNS record itself. Wait until the domain's status is **Active**.
@@ -296,7 +296,7 @@ needed.
 1. On the **R2 Object Storage** overview page, choose **Manage API tokens** (under "Account details"), then
    **Create API token** (a User API token is fine).
 2. Give it a name such as `portfolio rclone`, permission **Object Read & Write**, and under "Specify bucket(s)" apply
-   it only to `portfolio-files`. Create it.
+   it only to `photography-portfolio`. Create it.
 3. The next page shows the **Access Key ID**, the **Secret Access Key** and the S3 endpoint
    `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`. Copy all three now: the secret is shown only once. (The account ID
    is also in the dashboard URL and on the R2 overview page.)
@@ -318,7 +318,7 @@ needed.
 5. Check that it works. This only lists the bucket (empty at first, so it prints nothing and no error):
 
    ```sh
-   nix-shell --run 'rclone lsf r2:portfolio-files'
+   nix-shell --run 'rclone lsf r2:photography-portfolio'
    ```
 
 ### 5. Log wrangler in

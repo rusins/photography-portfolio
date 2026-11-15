@@ -6,7 +6,7 @@
   "previewSize": 2560,
   "previewQuality": 0.7,
   "rcloneRemote": "r2",
-  "r2Bucket": "portfolio-files",
+  "r2Bucket": "photography-portfolio",
   "pagesProject": "portfolio",
   "pagesBranch": "main"
 }
