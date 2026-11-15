@@ -428,3 +428,12 @@ describe('buildSite sitemap and robots.txt', () => {
     expect(await readPage('robots.txt')).toBe('Sitemap: https://photos.example/sitemap.xml');
   });
 });
+
+describe('buildSite not-found page', () => {
+  test('is the old 404 page: the shared head and a centered message, without navigation', async () => {
+    const { readPage } = await buildLibrary({});
+    const page = await readPage('404.html');
+    expect(page).toContain('<link rel="stylesheet" href="/css/custom.css">');
+    expect(page).toContain('<body><h1 style="text-align: center">Page not found</h1></body>');
+  });
+});

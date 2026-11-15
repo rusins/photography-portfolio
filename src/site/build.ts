@@ -9,6 +9,7 @@ import type { Log } from '../log.ts';
 import { albumPage, albumsPage } from './albumPages.ts';
 import { homePage, recentPage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
+import { notFoundPage } from './layout.ts';
 import { licensePage } from './licensePage.ts';
 import { updatePreview } from './previews.ts';
 import { robotsTxt, sitemap } from './seo.ts';
@@ -55,6 +56,7 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
   for (const tag of library.tags) {
     await writeOutputFile(join(outputPath, 'tag', `${tag}.html`), tagPage(tag, entries, config));
   }
+  await writeOutputFile(join(outputPath, '404.html'), notFoundPage(config.siteTitle));
   await writeOutputFile(join(outputPath, 'sitemap.xml'), sitemap(library, config.siteUrl));
   await writeOutputFile(join(outputPath, 'robots.txt'), robotsTxt(config.siteUrl));
   return { photoEntries: entries.length, albums: library.albums.length, previewsGenerated };

@@ -65,3 +65,8 @@ export function pageWithNavigation(siteTitle: string, openGraph: OpenGraph | und
 export function centeredTopText(text: string): string {
   return `<h1 style="text-align: center; font-family: 'Raleway', sans-serif; font-weight: 300">${escapeHtml(text)}</h1>`;
 }
+
+/** The page Cloudflare Pages serves for unknown URLs, like the old server's not-found page. */
+export function notFoundPage(siteTitle: string): string {
+  return htmlDocument(siteTitle, undefined, '<h1 style="text-align: center">Page not found</h1>');
+}
