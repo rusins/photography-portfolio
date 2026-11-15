@@ -178,7 +178,16 @@ const tinyJpeg = () => sharp({ create: { width: 30, height: 20, channels: 3, bac
  * @param photos Photo entries by Image ID, with their info.json contents
  * @param albums Album file contents by path in the Library
  */
-async function buildLibrary({ photos = {}, albums = {} }: { photos?: Record<string, object>; albums?: Record<string, string> }) {
+async function buildLibrary({
+  photos = {},
+  albums = {},
+  license,
+}: {
+  photos?: Record<string, object>;
+  albums?: Record<string, string>;
+  /** Contents of the Library's LICENSE file, if it has one. */
+  license?: string;
+}) {
   const libraryPath = await mkdtemp(join(tmpdir(), 'library-'));
   for (const [id, info] of Object.entries(photos)) {
     await mkdir(join(libraryPath, id), { recursive: true });
@@ -189,6 +198,7 @@ async function buildLibrary({ photos = {}, albums = {} }: { photos?: Record<stri
     await mkdir(dirname(join(libraryPath, path)), { recursive: true });
     await writeFile(join(libraryPath, path), contents);
   }
+  if (license !== undefined) await writeFile(join(libraryPath, 'LICENSE'), license);
   const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
   const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
   await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log: silentLog });
@@ -302,5 +312,128 @@ describe('buildSite Album pages', () => {
 
   test('say so for an Album without entries', async () => {
     expect(await readPage('album/trip/Arctic.html')).toContain('<main><h1>Album entries for /trip/Arctic not found! D:</h1></main>');
+  });
+});
+
+describe('buildSite Tag pages', () => {
+  let readPage: (path: string) => Promise<string>;
+
+  beforeAll(async () => {
+    ({ readPage } = await buildLibrary({
+      photos: {
+        '/a': { tags: ['autumn', 'Gauja valley'] },
+        '/b': { tags: ['winter'] },
+        '/c': { tags: ['autumn'] },
+        '/d': {},
+      },
+    }));
+  });
+
+  test('write a page per Tag with its Photo entries', async () => {
+    expect(photoBoxIds(await readPage('tag/autumn.html'))).toEqual(['/a', '/c']);
+    expect(photoBoxIds(await readPage('tag/winter.html'))).toEqual(['/b']);
+    expect(photoBoxIds(await readPage('tag/Gauja valley.html'))).toEqual(['/a']);
+  });
+
+  test('are titled with the Tag, above an image grid, with the navigation header', async () => {
+    const page = await readPage('tag/Gauja valley.html');
+    expect(page).toContain(
+      '<header><div id="menuToggle"',
+    );
+    expect(page).toContain(
+      '<main><h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300">Images tagged: Gauja valley</h1><div style="margin: 1em"><div class="columns"><div class="photo-box animated-padding"><a href="/image/a"',
+    );
+  });
+});
+
+describe('buildSite Tags page', () => {
+  test('lists every Tag once, sorted ignoring case, as links to their pages', async () => {
+    const { readPage } = await buildLibrary({
+      photos: { '/a': { tags: ['beach', 'Zvārtes Iezis', 'Autumn'] }, '/b': { tags: ['autumn', 'beach'] } },
+    });
+    expect(await readPage('tags.html')).toContain(
+      '<main><div class="pure-menu"><ul class="pure-menu-list">' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/Autumn">Autumn</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/autumn">autumn</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/beach">beach</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/Zv%C4%81rtes%20Iezis">Zvārtes Iezis</a></li>' +
+        '</ul></div></main>',
+    );
+  });
+});
+
+describe('buildSite Recent page', () => {
+  test('shows the 12 newest Photo entries, newest first, even with a Best album', async () => {
+    const photos: Record<string, object> = { '/untimed': {} };
+    for (let day = 10; day <= 22; day++) photos[`/day${day}`] = { time: `2024-01-${day}T12:00:00` };
+    const { readPage } = await buildLibrary({ photos, albums: { 'Best.album': '/day10' } });
+    const page = await readPage('recent.html');
+    expect(page).toContain('<header><div id="menuToggle"');
+    expect(photoBoxIds(page)).toEqual([
+      '/day22', '/day21', '/day20', '/day19', '/day18', '/day17', '/day16', '/day15', '/day14', '/day13', '/day12', '/day11',
+    ]);
+  });
+});
+
+describe('buildSite License page', () => {
+  test('shows the LICENSE file\'s contents as text', async () => {
+    const { readPage } = await buildLibrary({ license: 'All rights reserved.\nAsk <me> first & be nice.' });
+    expect(await readPage('license.html')).toContain(
+      '<main><div style="text-align: center; font-size: 4em; font-family: \'Raleway\', sans-serif; font-weight: 200">License</div>' +
+        '<div class="center" style="max-width: 80em">All rights reserved.\nAsk &lt;me&gt; first &amp; be nice.</div></main>',
+    );
+  });
+
+  test('is not written when the Library has no LICENSE file', async () => {
+    const { readPage } = await buildLibrary({});
+    await expect(readPage('license.html')).rejects.toThrow('ENOENT');
+  });
+});
+
+describe('buildSite sitemap and robots.txt', () => {
+  let readPage: (path: string) => Promise<string>;
+
+  beforeAll(async () => {
+    ({ readPage } = await buildLibrary({
+      photos: { '/2023/Zvārtes Iezis': { tags: ['autumn'] }, '/b': {} },
+      albums: { 'Trips.album': '/b', '2023/Latvia & more.album': 'Zvārtes Iezis' },
+    }));
+  });
+
+  test('the sitemap lists the main pages without /random, then every Album and Photo entry page', async () => {
+    const sitemap = await readPage('sitemap.xml');
+    const locs = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
+    expect(locs.slice(0, 4)).toEqual([
+      'https://photos.example',
+      'https://photos.example/recent',
+      'https://photos.example/albums',
+      'https://photos.example/tags',
+    ]);
+    expect(locs.slice(4).toSorted()).toEqual([
+      'https://photos.example/album/2023/Latvia%20%26%20more',
+      'https://photos.example/album/Trips',
+      'https://photos.example/image/2023/Zv%C4%81rtes%20Iezis',
+      'https://photos.example/image/b',
+    ]);
+    expect(sitemap).not.toContain('random');
+  });
+
+  test('the sitemap has the old format', async () => {
+    expect(await readPage('sitemap.xml')).toMatch(
+      /^<\?xml version="1.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">\n  <url>\n    <loc>https:\/\/photos\.example<\/loc>\n    <changefreq>monthly<\/changefreq>\n  <\/url>\n  <url>\n[\s\S]*<\/url>\n<\/urlset>$/,
+    );
+  });
+
+  test('robots.txt points at the sitemap', async () => {
+    expect(await readPage('robots.txt')).toBe('Sitemap: https://photos.example/sitemap.xml');
+  });
+});
+
+describe('buildSite not-found page', () => {
+  test('is the old 404 page: the shared head and a centered message, without navigation', async () => {
+    const { readPage } = await buildLibrary({});
+    const page = await readPage('404.html');
+    expect(page).toContain('<link rel="stylesheet" href="/css/custom.css">');
+    expect(page).toContain('<body><h1 style="text-align: center">Page not found</h1></body>');
   });
 });

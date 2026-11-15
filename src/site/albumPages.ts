@@ -5,7 +5,7 @@ import type { Library } from '../library/library.ts';
 import { compareTimes } from '../library/localDateTime.ts';
 import { lastIdPart } from '../library/photoEntry.ts';
 import { escapeHtml } from './html.ts';
-import { pageWithNavigation } from './layout.ts';
+import { centeredTopText, pageWithNavigation } from './layout.ts';
 import { altText, photoBoxes } from './photoGrid.ts';
 import { albumPageUrl, previewUrl } from './urls.ts';
 
@@ -59,10 +59,6 @@ function albumLink(library: Library, album: Album, coverSide: 'left' | 'right'):
   return `<a up-transition="move-left" style="color: black; text-decoration: none" href="${escapeHtml(albumPageUrl(album.id))}"><div style="display: flex; align-items: center; background-color: lightgrey; margin: 1em">${
     coverSide === 'left' ? cover + name : name + cover
   }</div></a>`;
-}
-
-function centeredTopText(text: string): string {
-  return `<h1 style="text-align: center; font-family: 'Raleway', sans-serif; font-weight: 300">${escapeHtml(text)}</h1>`;
 }
 
 function albumName(album: Album): string {

@@ -1,5 +1,7 @@
 import type { Log } from '../log.ts';
 import type { Album, AlbumId, LibraryEntry } from './album.ts';
+import { compareText } from './compareText.ts';
+import { compareTimes } from './localDateTime.ts';
 import type { ImageId, PhotoEntry } from './photoEntry.ts';
 import { findMatches } from './selector.ts';
 
@@ -40,6 +42,17 @@ export class Library {
 
   get photoEntries(): PhotoEntry[] {
     return this.entries.filter((entry) => entry.kind === 'photo');
+  }
+
+  /** The `count` newest Photo entries, newest first; Photo entries without a time come last. */
+  newestPhotoEntries(count: number): PhotoEntry[] {
+    return this.photoEntries.toSorted((a, b) => compareTimes(b.info.time, a.info.time)).slice(0, count);
+  }
+
+  /** Every Tag of the Photo entries, sorted ignoring case. */
+  get tags(): string[] {
+    const tags = new Set(this.photoEntries.flatMap((entry) => entry.info.tags ?? []));
+    return [...tags].toSorted((a, b) => compareText(a.toLowerCase(), b.toLowerCase()));
   }
 
   get albums(): Album[] {
