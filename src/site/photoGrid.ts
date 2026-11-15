@@ -22,3 +22,11 @@ export function imageGrid(entries: PhotoEntry[]): string {
 export function altText(id: ImageId): string {
   return `An image of ${lastIdPart(id).replaceAll(delimiterPattern, ' ')}.`;
 }
+
+/**
+ * Photo boxes kept in a `<template>`, so browsers load none of their Previews, next to empty columns that main.js
+ * fills with them in random order.
+ */
+export function randomImageGrid(entries: PhotoEntry[]): string {
+  return `<div class="random-photos" style="margin: 1em 1em 0"><template>${photoBoxes(entries)}</template><div class="columns"></div></div>`;
+}

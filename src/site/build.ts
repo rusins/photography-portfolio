@@ -7,7 +7,7 @@ import { Library } from '../library/library.ts';
 import { scanLibrary } from '../library/scan.ts';
 import type { Log } from '../log.ts';
 import { albumPage, albumsPage } from './albumPages.ts';
-import { homePage, recentPage } from './homePage.ts';
+import { homePage, randomPage, recentPage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
 import { notFoundPage } from './layout.ts';
 import { licensePage } from './licensePage.ts';
@@ -50,6 +50,7 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
   if (license !== undefined) await writeOutputFile(join(outputPath, 'license.html'), licensePage(license, config));
   await writeOutputFile(join(outputPath, 'index.html'), homePage(library, config));
   await writeOutputFile(join(outputPath, 'recent.html'), recentPage(library, config));
+  await writeOutputFile(join(outputPath, 'random.html'), randomPage(library, config));
   await writeOutputFile(join(outputPath, 'albums.html'), albumsPage(library, config));
   for (const album of library.albums) {
     await writeOutputFile(join(outputPath, 'album', `${album.id}.html`), albumPage(library, album, config));
