@@ -3,8 +3,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { SiteConfig } from '../config.ts';
 import type { PhotoEntry } from '../library/photoEntry.ts';
+import { Library } from '../library/library.ts';
 import { scanLibrary } from '../library/scan.ts';
 import type { Log } from '../log.ts';
+import { homePage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
 import { updatePreview } from './previews.ts';
 
@@ -27,7 +29,8 @@ export interface BuildSummary {
 
 /** Reads the Library and writes the static site folder. */
 export async function buildSite({ config, outputPath, previewCachePath, log }: BuildOptions): Promise<BuildSummary> {
-  const entries = (await scanLibrary(config.libraryPath, log)).filter((entry) => entry.kind === 'photo');
+  const library = new Library(await scanLibrary(config.libraryPath, log), log);
+  const entries = library.photoEntries;
   await rm(outputPath, { recursive: true, force: true });
   await cp(assetsPath, outputPath, { recursive: true });
   const hasLicense = await exists(join(config.libraryPath, 'LICENSE'));
@@ -36,6 +39,7 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
     if (await writePreview(entry, config, outputPath, previewCachePath)) previewsGenerated++;
     await writeOutputFile(join(outputPath, 'image', `${entry.id}.html`), imagePage(entry, config, hasLicense));
   }
+  await writeOutputFile(join(outputPath, 'index.html'), homePage(library, config));
   return { photoEntries: entries.length, previewsGenerated };
 }
 

@@ -1,9 +1,9 @@
 import type { SiteConfig } from '../config.ts';
 import { formatLocalDateTime } from '../library/localDateTime.ts';
-import { delimiterPattern } from '../library/patterns.ts';
-import { lastIdPart, type ImageId, type PhotoEntry } from '../library/photoEntry.ts';
+import { lastIdPart, type PhotoEntry } from '../library/photoEntry.ts';
 import { escapeHtml } from './html.ts';
 import { htmlDocument } from './layout.ts';
+import { altText } from './photoGrid.ts';
 import { downloadName, imagePageUrl, libraryFileUrl, previewUrl, tagPageUrl } from './urls.ts';
 
 const downloadLinkStyle = "font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 2em; color: black";
@@ -53,9 +53,4 @@ ${licenseNote}
 <div class="pure-menu"><ul class="pure-menu-list">${tagLinks.join('')}</ul></div>
 </main>`,
   );
-}
-
-/** E.g. `An image of my backyard.` for `/2023/my_backyard`. */
-function altText(id: ImageId): string {
-  return `An image of ${lastIdPart(id).replaceAll(delimiterPattern, ' ')}.`;
 }

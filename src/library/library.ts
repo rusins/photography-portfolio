@@ -1,6 +1,6 @@
 import type { Log } from '../log.ts';
 import type { Album, AlbumId, LibraryEntry } from './album.ts';
-import type { ImageId } from './photoEntry.ts';
+import type { ImageId, PhotoEntry } from './photoEntry.ts';
 import { findMatches } from './selector.ts';
 
 /** The Library's Photo entries and Albums, and which Albums contain what. Like the old server's AppState. */
@@ -36,6 +36,10 @@ export class Library {
       if (children.length > 0) this.children.set(entry.id, children);
     }
     this.orphans = entries.filter((entry) => !hasParent.has(entry.id));
+  }
+
+  get photoEntries(): PhotoEntry[] {
+    return this.entries.filter((entry) => entry.kind === 'photo');
   }
 
   /** The Album `/Best` or `/best`, whose Photo entries fill the home page. */
