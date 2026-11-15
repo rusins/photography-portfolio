@@ -17,6 +17,7 @@ export interface PhotoInfo {
 }
 
 export interface PhotoEntry {
+  kind: 'photo';
   id: ImageId;
   info: PhotoInfo;
   /** Paths within the Library, primaryImageFile first, then longest file name. */

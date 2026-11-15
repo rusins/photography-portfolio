@@ -104,6 +104,7 @@ async function readPhotoEntry(
   }
 
   return {
+    kind: 'photo',
     id,
     info: fillFromExif(info, exif),
     originals: [firstOriginal, ...otherOriginals],

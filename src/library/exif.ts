@@ -1,5 +1,6 @@
 import { localDateTime, type LocalDateTime } from './localDateTime.ts';
 import type { PhotoInfo } from './photoEntry.ts';
+import { splitLikeJava } from './splitLikeJava.ts';
 
 /** Parses Exif date time text like `2021:10:17 00:33:35`, optionally wrapped in single quotes. */
 export function parseExifDateTime(text: string): LocalDateTime | undefined {
@@ -21,17 +22,10 @@ export function parseSonyModel(exifModel: string): string | undefined {
 }
 
 function sonyModelName(suffix: string): string {
-  const parts = splitDroppingTrailingEmpty(suffix, 'M');
+  const parts = splitLikeJava(suffix, 'M');
   if (parts.length !== 2) return suffix;
   const [base, version] = parts as [string, string];
   return `${base.toLowerCase()} ${romanDigits[version] ?? version}`;
-}
-
-/** Splits like Java's String.split, which drops trailing empty parts. */
-function splitDroppingTrailingEmpty(text: string, separator: string): string[] {
-  const parts = text.split(separator);
-  while (parts.length > 0 && parts.at(-1) === '') parts.pop();
-  return parts;
 }
 
 /** The Exif tags the old server read, as exifr names them without value conversion. */

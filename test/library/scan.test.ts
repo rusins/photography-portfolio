@@ -23,6 +23,7 @@ describe('scanLibrary', () => {
   test('returns a Photo entry for day-night with fields filled from Exif', async () => {
     const entries = await scanLibrary(exampleLibrary, recordingLog().log);
     expect(entries).toContainEqual({
+      kind: 'photo',
       id: '/day-night',
       info: {
         description: 'A composite photo of my backyard',
