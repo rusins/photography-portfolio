@@ -3,3 +3,5 @@ node_modules/
 /site/
 # Local Preview cache
 /.preview-cache/
+# Local MD5 cache of Library files, for ./publish
+/.publish-cache/
