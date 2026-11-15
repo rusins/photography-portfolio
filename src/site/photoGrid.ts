@@ -15,7 +15,12 @@ export function photoBoxes(entries: PhotoEntry[]): string {
 
 /** Photo boxes in columns. */
 export function imageGrid(entries: PhotoEntry[]): string {
-  return `<div style="margin: 1em 1em 0"><div class="columns">${photoBoxes(entries)}</div></div>`;
+  return gridContainer('', `<div class="columns">${photoBoxes(entries)}</div>`);
+}
+
+/** The margins around an image grid. */
+function gridContainer(attributes: string, content: string): string {
+  return `<div${attributes} style="margin: 1em 1em 0">${content}</div>`;
 }
 
 /** E.g. `An image of my backyard.` for `/2023/my_backyard`. */
@@ -25,8 +30,8 @@ export function altText(id: ImageId): string {
 
 /**
  * Photo boxes kept in a `<template>`, so browsers load none of their Previews, next to empty columns that main.js
- * fills with them in random order.
+ * fills with clones of up to 12 of them, picked at random each time the grid is shown.
  */
 export function randomImageGrid(entries: PhotoEntry[]): string {
-  return `<div class="random-photos" style="margin: 1em 1em 0"><template>${photoBoxes(entries)}</template><div class="columns"></div></div>`;
+  return gridContainer(' class="random-photos"', `<template>${photoBoxes(entries)}</template><div class="columns"></div>`);
 }

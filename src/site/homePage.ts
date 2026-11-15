@@ -29,7 +29,7 @@ export function recentPage(library: Library, config: SiteConfig): string {
   return pageWithNavigation(config.siteTitle, undefined, imageGrid(library.newestPhotoEntries(newestCount)));
 }
 
-/** The page at `/random`: every Photo entry, shuffled in the browser. */
+/** The page at `/random`: up to 12 Photo entries, picked at random from all of them in the browser. */
 export function randomPage(library: Library, config: SiteConfig): string {
   const noScript = '<noscript>Random needs JavaScript. See the <a href="/recent">Recent</a> photos instead.</noscript>';
   return pageWithNavigation(config.siteTitle, undefined, noScript + randomImageGrid(library.photoEntries));
