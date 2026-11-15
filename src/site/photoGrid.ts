@@ -15,7 +15,7 @@ export function photoBoxes(entries: PhotoEntry[]): string {
 
 /** Photo boxes in columns. */
 export function imageGrid(entries: PhotoEntry[]): string {
-  return `<div style="margin: 1em"><div class="columns">${photoBoxes(entries)}</div></div>`;
+  return `<div style="margin: 1em 1em 0"><div class="columns">${photoBoxes(entries)}</div></div>`;
 }
 
 /** E.g. `An image of my backyard.` for `/2023/my_backyard`. */

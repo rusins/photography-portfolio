@@ -82,7 +82,7 @@ describe('buildSite with the example Library', () => {
   test('without a Best album, the home page shows the newest Photo entries as pop-over links', async () => {
     const home = await readFile(join(outputPath, 'index.html'), 'utf8');
     expect(home).toContain(
-      '<div style="margin: 1em"><div class="columns"><div class="photo-box animated-padding"><a href="/image/day-night" up-layer="new" up-history="false" up-size="large"><img src="/preview/day-night.jpg" alt="An image of day night."></a></div></div></div>',
+      '<div style="margin: 1em 1em 0"><div class="columns"><div class="photo-box animated-padding"><a href="/image/day-night" up-layer="new" up-history="false" up-size="large"><img src="/preview/day-night.jpg" alt="An image of day night."></a></div></div></div>',
     );
   });
 
@@ -94,7 +94,7 @@ describe('buildSite with the example Library', () => {
         '<li class="pure-menu-item"><a class="pure-menu-link" up-instant href="/recent" onclick="toggleMenu()">Recent</a></li>' +
         '<li class="pure-menu-item"><a class="pure-menu-link" up-instant href="/albums" onclick="toggleMenu()">Albums</a></li>' +
         '<li class="pure-menu-item"><a class="pure-menu-link" up-preload href="/tags" onclick="toggleMenu()">Tags</a></li>' +
-        '</ul></nav><span class="pure-menu-heading" style="text-align: center"><a href="/" class="pure-menu-link" up-follow style="display: inline">Test Photography</a></span></header><main><div style="margin: 1em">',
+        '</ul></nav><span class="pure-menu-heading" style="text-align: center"><a href="/" class="pure-menu-link" up-follow style="display: inline">Test Photography</a></span></header><main><div style="margin: 1em 1em 0">',
     );
     expect(home).not.toContain('Random');
   });
@@ -379,7 +379,7 @@ describe('buildSite Tag pages', () => {
       '<header><div id="menuToggle"',
     );
     expect(page).toContain(
-      '<main><h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300">Images tagged: Gauja valley</h1><div style="margin: 1em"><div class="columns"><div class="photo-box animated-padding"><a href="/image/a"',
+      '<main><h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300">Images tagged: Gauja valley</h1><div style="margin: 1em 1em 0"><div class="columns"><div class="photo-box animated-padding"><a href="/image/a"',
     );
   });
 });

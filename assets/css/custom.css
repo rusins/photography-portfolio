@@ -117,7 +117,7 @@ header {
 
 .columns {
   column-count: 1;
-  column-gap: 0;
+  column-gap: 1em;
 }
 
 @media (min-width: 48em) {
@@ -138,6 +138,20 @@ header {
   }
 }
 
-.columns > div:first-child {
-  margin-top: 0; /* margin-top only affects first column for some reason */
+/* In the grid every photo fills its column's width, so portrait photos are not narrowed to fit 75vh.
+   Gaps come only from column-gap and padding-bottom, all 1em like the grid's edges in photoGrid.ts.
+   Margins would not do: side-by-side ones add up while stacked ones collapse, and a margin at the end
+   of a column is dropped, leaving no space under the last row. */
+.columns .photo-box {
+  max-height: none;
+  margin: 0;
+  padding-bottom: 1em;
+  overflow: visible;
+  break-inside: avoid;
+}
+
+/* Clips the hover zoom to the photo, so it does not spill into the gap below. */
+.columns .photo-box a {
+  display: block;
+  overflow: hidden;
 }
