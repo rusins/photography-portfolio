@@ -155,7 +155,7 @@ describe('buildSite with a LICENSE, Tags and an Image ID with spaces and non-ASC
   });
 
   test('notes the license when the Library has a LICENSE file', () => {
-    expect(page).toContain('By downloading, you agree to the the <a href="/license">License Terms</a>');
+    expect(page).toContain('By downloading, you agree to the <a href="/license">License Terms</a>');
   });
 
   test('lists Tags as links to their pages', () => {

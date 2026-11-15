@@ -24,7 +24,7 @@ export class Library {
     }
     if (duplicateIds.size > 0) {
       log.warn(
-        `Duplicate album entries detected! Please check for duplicates for the following IDs: ${[...duplicateIds].join(', ')}`,
+        `Duplicate IDs (Photo entries or Albums), keeping the first: ${[...duplicateIds].join(', ')}`,
       );
     }
     const entries = [...this.entriesById.values()];
