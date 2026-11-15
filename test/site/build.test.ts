@@ -351,3 +351,16 @@ describe('buildSite Tags page', () => {
     );
   });
 });
+
+describe('buildSite Recent page', () => {
+  test('shows the 12 newest Photo entries, newest first, even with a Best album', async () => {
+    const photos: Record<string, object> = { '/untimed': {} };
+    for (let day = 10; day <= 22; day++) photos[`/day${day}`] = { time: `2024-01-${day}T12:00:00` };
+    const { readPage } = await buildLibrary({ photos, albums: { 'Best.album': '/day10' } });
+    const page = await readPage('recent.html');
+    expect(page).toContain('<header><div id="menuToggle"');
+    expect(photoBoxIds(page)).toEqual([
+      '/day22', '/day21', '/day20', '/day19', '/day18', '/day17', '/day16', '/day15', '/day14', '/day13', '/day12', '/day11',
+    ]);
+  });
+});
