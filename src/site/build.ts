@@ -10,6 +10,7 @@ import { albumPage, albumsPage } from './albumPages.ts';
 import { homePage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
 import { updatePreview } from './previews.ts';
+import { tagPage, tagsPage } from './tagPages.ts';
 
 /** Favicon, CSS and JavaScript, copied as they are to the site folder. */
 const assetsPath = fileURLToPath(new URL('../../assets', import.meta.url));
@@ -45,6 +46,10 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
   await writeOutputFile(join(outputPath, 'albums.html'), albumsPage(library, config));
   for (const album of library.albums) {
     await writeOutputFile(join(outputPath, 'album', `${album.id}.html`), albumPage(library, album, config));
+  }
+  await writeOutputFile(join(outputPath, 'tags.html'), tagsPage(library.tags, config));
+  for (const tag of library.tags) {
+    await writeOutputFile(join(outputPath, 'tag', `${tag}.html`), tagPage(tag, entries, config));
   }
   return { photoEntries: entries.length, albums: library.albums.length, previewsGenerated };
 }

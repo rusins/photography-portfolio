@@ -4,7 +4,8 @@ import { lastIdPart, type PhotoEntry } from '../library/photoEntry.ts';
 import { escapeHtml } from './html.ts';
 import { htmlDocument } from './layout.ts';
 import { altText } from './photoGrid.ts';
-import { downloadName, imagePageUrl, libraryFileUrl, previewUrl, tagPageUrl } from './urls.ts';
+import { tagList } from './tagPages.ts';
+import { downloadName, imagePageUrl, libraryFileUrl, previewUrl } from './urls.ts';
 
 const downloadLinkStyle = "font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 2em; color: black";
 
@@ -28,9 +29,6 @@ export function imagePage(entry: PhotoEntry, config: SiteConfig, showLicenseNote
   const licenseNote = showLicenseNote
     ? '<div style="text-align: center; margin: 0.5em"><span>By downloading, you agree to the the <a href="/license">License Terms</a></span></div>'
     : '<div></div>';
-  const tagLinks = (info.tags ?? []).map(
-    (tag) => `<li class="pure-menu-item"><a class="pure-menu-link" href="${escapeHtml(tagPageUrl(tag))}">${escapeHtml(tag)}</a></li>`,
-  );
   const openGraph = {
     title: `${lastIdPart(entry.id)} | ${config.siteTitle}`,
     pageUrl: config.siteUrl + imagePageUrl(entry.id),
@@ -50,7 +48,7 @@ export function imagePage(entry: PhotoEntry, config: SiteConfig, showLicenseNote
 <div style="text-align: center">${entry.rawFiles.map((path) => downloadLink(path, 'Download Raw File')).join('')}</div>
 ${licenseNote}
 </div>
-<div class="pure-menu"><ul class="pure-menu-list">${tagLinks.join('')}</ul></div>
+${tagList(info.tags ?? [])}
 </main>`,
   );
 }

@@ -304,3 +304,50 @@ describe('buildSite Album pages', () => {
     expect(await readPage('album/trip/Arctic.html')).toContain('<main><h1>Album entries for /trip/Arctic not found! D:</h1></main>');
   });
 });
+
+describe('buildSite Tag pages', () => {
+  let readPage: (path: string) => Promise<string>;
+
+  beforeAll(async () => {
+    ({ readPage } = await buildLibrary({
+      photos: {
+        '/a': { tags: ['autumn', 'Gauja valley'] },
+        '/b': { tags: ['winter'] },
+        '/c': { tags: ['autumn'] },
+        '/d': {},
+      },
+    }));
+  });
+
+  test('write a page per Tag with its Photo entries', async () => {
+    expect(photoBoxIds(await readPage('tag/autumn.html'))).toEqual(['/a', '/c']);
+    expect(photoBoxIds(await readPage('tag/winter.html'))).toEqual(['/b']);
+    expect(photoBoxIds(await readPage('tag/Gauja valley.html'))).toEqual(['/a']);
+  });
+
+  test('are titled with the Tag, above an image grid, with the navigation header', async () => {
+    const page = await readPage('tag/Gauja valley.html');
+    expect(page).toContain(
+      '<header><div id="menuToggle"',
+    );
+    expect(page).toContain(
+      '<main><h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300">Images tagged: Gauja valley</h1><div style="margin: 1em"><div class="columns"><div class="photo-box animated-padding"><a href="/image/a"',
+    );
+  });
+});
+
+describe('buildSite Tags page', () => {
+  test('lists every Tag once, sorted ignoring case, as links to their pages', async () => {
+    const { readPage } = await buildLibrary({
+      photos: { '/a': { tags: ['beach', 'Zvārtes Iezis', 'Autumn'] }, '/b': { tags: ['autumn', 'beach'] } },
+    });
+    expect(await readPage('tags.html')).toContain(
+      '<main><div class="pure-menu"><ul class="pure-menu-list">' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/Autumn">Autumn</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/autumn">autumn</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/beach">beach</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" href="/tag/Zv%C4%81rtes%20Iezis">Zvārtes Iezis</a></li>' +
+        '</ul></div></main>',
+    );
+  });
+});

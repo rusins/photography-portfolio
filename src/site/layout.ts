@@ -60,3 +60,8 @@ export function pageWithNavigation(siteTitle: string, openGraph: OpenGraph | und
     `</ul></nav><span class="pure-menu-heading" style="text-align: center"><a href="/" class="pure-menu-link" up-follow style="display: inline">${escapeHtml(siteTitle)}</a></span></header>`;
   return htmlDocument(siteTitle, openGraph, `${header}<main>${content}</main>`);
 }
+
+/** A page heading, e.g. an Album's name. */
+export function centeredTopText(text: string): string {
+  return `<h1 style="text-align: center; font-family: 'Raleway', sans-serif; font-weight: 300">${escapeHtml(text)}</h1>`;
+}
