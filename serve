@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Builds the site, then serves ./site at http://localhost:8788 the way Cloudflare Pages serves it,
+# for checking it before publishing. Stop it with Ctrl+C. Changes nothing outside this repository.
+# Usage: ./serve [config file]
+#   PORT=8000 ./serve  serves on another port
+set -euo pipefail
+cd "$(dirname "$0")"
+if ! command -v node >/dev/null || ! command -v wrangler >/dev/null; then
+  exec nix-shell --run "$(printf '%q ' ./serve "$@")"
+fi
+./build "$@"
+# A fixed compatibility date: wrangler defaults to today's, which its bundled runtime may not support yet.
+exec wrangler pages dev site --port "${PORT:-8788}" --compatibility-date 2026-05-01 --persist-to .wrangler/state

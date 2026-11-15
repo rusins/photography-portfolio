@@ -5,3 +5,5 @@ node_modules/
 /.preview-cache/
 # Local MD5 cache of Library files, for ./publish
 /.publish-cache/
+# Local state of ./serve (wrangler pages dev)
+/.wrangler/

@@ -38,6 +38,7 @@ them from the repository folder.
 | Command | What it does |
 |---|---|
 | `./build [config file]` | Builds the site into `./site` from the Library. Changes nothing outside this repository. |
+| `./serve [config file]` | Runs `./build`, then serves `./site` at [localhost:8788](http://localhost:8788) the way Cloudflare Pages will, until you press Ctrl+C. Changes nothing outside this repository. |
 | `./publish [config file]` | Type checks and tests the code, runs `./build`, makes R2 mirror the Library, then deploys `./site` to Cloudflare Pages. |
 | `./pull [--force] [config file]` | Downloads into the Library every file R2 has that the Library is missing. With `--force`, also replaces Library files that differ from R2. |
 
@@ -50,6 +51,26 @@ Two caches are kept in the repository folder (both git-ignored, both safe to del
   longer in the Library are removed from it.
 - `.publish-cache/hashes.json` holds the MD5 of every Library file, so `./publish` and `./pull` only read files that are
   new or modified since the last run.
+
+### Trying the site locally: `./serve`
+
+`./serve` shows the site as it will look after `./publish`, without uploading anything. It builds the site, then
+serves `./site` with `wrangler pages dev`, Cloudflare's local stand-in for Pages, so addresses behave as they do live:
+`/album/Best` serves `album/Best.html`, `/album/Best.html` redirects to `/album/Best`, and an unknown address gets the
+site's 404 page. To use another port:
+
+```sh
+PORT=8000 ./serve
+```
+
+Two things still point at the live domains:
+
+- "Download Photo" and "Download Raw File" links go to `filesUrl`, i.e. R2. A photo that is not published yet has no
+  file there, so its download links fail locally until the next `./publish`.
+- `siteUrl` is used in the sitemap, `robots.txt` and link previews, which is harmless locally.
+
+`./serve` does not rebuild when the Library changes: stop it with Ctrl+C and run it again. wrangler keeps some local
+state in `.wrangler/` (git-ignored, safe to delete).
 
 ### What `./publish` does, step by step
 
@@ -78,6 +99,7 @@ cd ~/Code/portfolio     # wherever this repository is
 nix-shell               # optional: the commands start it themselves, but it is faster to stay in it
 # ... add or edit Photo entries and Albums in the Library ...
 ./build                 # optional: check the warnings before publishing
+./serve                 # optional: look at the site at http://localhost:8788, Ctrl+C to stop
 ./publish
 ```
 
