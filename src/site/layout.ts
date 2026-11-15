@@ -4,7 +4,8 @@ import { escapeHtml } from './html.ts';
 export interface OpenGraph {
   title: string;
   pageUrl: string;
-  imageUrl: string;
+  /** Left out when there is no Photo entry to show. */
+  imageUrl?: string;
   description?: string;
 }
 
@@ -37,11 +38,25 @@ function openGraphTags({ title, pageUrl, imageUrl, description }: OpenGraph): st
     property('og:title', title),
     property('og:type', 'website'),
     property('og:url', pageUrl),
-    property('og:image', imageUrl),
+    imageUrl === undefined ? '' : property('og:image', imageUrl),
     description === undefined ? '' : property('og:description', description),
     named('twitter:card', 'summary_large_image'),
     named('twitter:title', title),
     description === undefined ? '' : named('twitter:description', description),
-    named('twitter:image', imageUrl),
+    imageUrl === undefined ? '' : named('twitter:image', imageUrl),
   ].join('');
+}
+
+/** A page with the shared header: the navigation menu and the site title linking home. */
+export function pageWithNavigation(siteTitle: string, openGraph: OpenGraph | undefined, content: string): string {
+  const menuItem = (unpolyAttribute: string, href: string, text: string) =>
+    `<li class="pure-menu-item"><a class="pure-menu-link" ${unpolyAttribute} href="${href}" onclick="toggleMenu()">${text}</a></li>`;
+  const header =
+    '<header><div id="menuToggle" onclick="toggleMenu()">☰</div><nav id="menu" class="navigation pure-menu"><ul class="pure-menu-list">' +
+    '<li id="closeMenu" class="pure-menu-item"><a class="pure-menu-link" href="#" onclick="toggleMenu()">Close Menu</a></li>' +
+    menuItem('up-instant', '/recent', 'Recent') +
+    menuItem('up-instant', '/albums', 'Albums') +
+    menuItem('up-preload', '/tags', 'Tags') +
+    `</ul></nav><span class="pure-menu-heading" style="text-align: center"><a href="/" class="pure-menu-link" up-follow style="display: inline">${escapeHtml(siteTitle)}</a></span></header>`;
+  return htmlDocument(siteTitle, openGraph, `${header}<main>${content}</main>`);
 }

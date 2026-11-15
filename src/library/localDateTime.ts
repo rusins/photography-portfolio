@@ -34,3 +34,11 @@ export function formatLocalDateTime(time: LocalDateTime): string {
   const month = monthNames[date.getUTCMonth()];
   return `${day}, ${month} ${date.getUTCDate()}. ${date.getUTCFullYear()}, ${time.slice(11, 19)}`;
 }
+
+/** Orders times chronologically, a missing time first, like the old server's ordering of optional times. */
+export function compareTimes(a: LocalDateTime | undefined, b: LocalDateTime | undefined): number {
+  if (a === b) return 0;
+  if (a === undefined) return -1;
+  if (b === undefined) return 1;
+  return a < b ? -1 : 1;
+}

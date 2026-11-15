@@ -3,8 +3,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { SiteConfig } from '../config.ts';
 import type { PhotoEntry } from '../library/photoEntry.ts';
+import { Library } from '../library/library.ts';
 import { scanLibrary } from '../library/scan.ts';
 import type { Log } from '../log.ts';
+import { albumPage, albumsPage } from './albumPages.ts';
+import { homePage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
 import { updatePreview } from './previews.ts';
 
@@ -22,12 +25,14 @@ export interface BuildOptions {
 
 export interface BuildSummary {
   photoEntries: number;
+  albums: number;
   previewsGenerated: number;
 }
 
 /** Reads the Library and writes the static site folder. */
 export async function buildSite({ config, outputPath, previewCachePath, log }: BuildOptions): Promise<BuildSummary> {
-  const entries = await scanLibrary(config.libraryPath, log);
+  const library = new Library(await scanLibrary(config.libraryPath, log), log);
+  const entries = library.photoEntries;
   await rm(outputPath, { recursive: true, force: true });
   await cp(assetsPath, outputPath, { recursive: true });
   const hasLicense = await exists(join(config.libraryPath, 'LICENSE'));
@@ -36,7 +41,12 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
     if (await writePreview(entry, config, outputPath, previewCachePath)) previewsGenerated++;
     await writeOutputFile(join(outputPath, 'image', `${entry.id}.html`), imagePage(entry, config, hasLicense));
   }
-  return { photoEntries: entries.length, previewsGenerated };
+  await writeOutputFile(join(outputPath, 'index.html'), homePage(library, config));
+  await writeOutputFile(join(outputPath, 'albums.html'), albumsPage(library, config));
+  for (const album of library.albums) {
+    await writeOutputFile(join(outputPath, 'album', `${album.id}.html`), albumPage(library, album, config));
+  }
+  return { photoEntries: entries.length, albums: library.albums.length, previewsGenerated };
 }
 
 /**

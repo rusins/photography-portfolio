@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { delimiterPattern, originalPattern, rawFilePattern } from '../../src/library/patterns.ts';
+import { albumPattern, delimiterPattern, originalPattern, rawFilePattern } from '../../src/library/patterns.ts';
 
 // Ported from RegexSpec.scala
 describe('patterns', () => {
@@ -17,6 +17,11 @@ describe('patterns', () => {
     expect('image.RAW').toMatch(rawFilePattern);
     expect('image.ARW').toMatch(rawFilePattern);
     expect('image.raw.copy').not.toMatch(rawFilePattern);
+  });
+
+  test('albumPattern', () => {
+    expect('Norway.album').toMatch(albumPattern);
+    expect('Norway').not.toMatch(albumPattern);
   });
 
   test('delimiterPattern', () => {

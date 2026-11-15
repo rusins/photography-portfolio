@@ -23,6 +23,7 @@ describe('scanLibrary', () => {
   test('returns a Photo entry for day-night with fields filled from Exif', async () => {
     const entries = await scanLibrary(exampleLibrary, recordingLog().log);
     expect(entries).toContainEqual({
+      kind: 'photo',
       id: '/day-night',
       info: {
         description: 'A composite photo of my backyard',
@@ -47,7 +48,7 @@ describe('scanLibrary', () => {
       await writeFile(join(folder, name), '');
     }
 
-    const entries = await scanLibrary(library, recordingLog().log);
+    const entries = (await scanLibrary(library, recordingLog().log)).filter((entry) => entry.kind === 'photo');
 
     expect(entries.map(({ id, originals, rawFiles }) => ({ id, originals, rawFiles }))).toEqual([
       {
@@ -68,5 +69,26 @@ describe('scanLibrary', () => {
 
     expect(entries).toEqual([]);
     expect(warnings).toEqual(['No image files found for /empty']);
+  });
+
+  test('returns an Album for random.album', async () => {
+    const entries = await scanLibrary(exampleLibrary, recordingLog().log);
+    expect(entries).toContainEqual({ kind: 'album', id: '/random', selectors: ['day-night', '/something/*'] });
+  });
+
+  test('gives an Album in a folder an ID with the folder path', async () => {
+    const entries = await scanLibrary(exampleLibrary, recordingLog().log);
+    expect(entries).toContainEqual({ kind: 'album', id: '/folder/recursive', selectors: ['*'] });
+  });
+
+  test('skips a non-UTF-8 Album with a warning', async () => {
+    const library = await mkdtemp(join(tmpdir(), 'library-'));
+    await writeFile(join(library, 'broken.album'), Buffer.from([0x2f, 0xff, 0xfe, 0x0a]));
+    const { warnings, log } = recordingLog();
+
+    const entries = await scanLibrary(library, log);
+
+    expect(entries).toEqual([]);
+    expect(warnings).toEqual([`Album file ${join(library, 'broken.album')} is not UTF-8 encoded!`]);
   });
 });

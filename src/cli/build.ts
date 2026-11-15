@@ -15,4 +15,6 @@ if (!(await stat(config.libraryPath).catch(() => undefined))?.isDirectory()) {
 const outputPath = repoPath('site');
 console.log(`Building ${outputPath} from the Library at ${config.libraryPath}`);
 const summary = await buildSite({ config, outputPath, previewCachePath: repoPath('.preview-cache'), log: consoleLog });
-console.log(`Built ${summary.photoEntries} Photo entry pages, generated ${summary.previewsGenerated} Previews.`);
+console.log(
+  `Built ${summary.photoEntries} Photo entry pages and ${summary.albums} Album pages, generated ${summary.previewsGenerated} Previews.`,
+);
