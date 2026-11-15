@@ -27,9 +27,24 @@ export interface PublishConfig {
   pagesBranch: string;
 }
 
-/** Reads and checks the config file. */
+/** Reads and checks the site settings of the config file. */
 export async function loadConfig(path: string): Promise<SiteConfig> {
+  return siteConfig(await fieldReader(path));
+}
+
+/** Reads and checks the site and publish settings of the config file. */
+export async function loadPublishConfig(path: string): Promise<SiteConfig & PublishConfig> {
   const field = await fieldReader(path);
+  return {
+    ...siteConfig(field),
+    rcloneRemote: field.text('rcloneRemote'),
+    r2Bucket: field.text('r2Bucket'),
+    pagesProject: field.text('pagesProject'),
+    pagesBranch: field.text('pagesBranch'),
+  };
+}
+
+function siteConfig(field: FieldReader): SiteConfig {
   return {
     siteTitle: field.text('siteTitle'),
     siteUrl: field.text('siteUrl').replace(/\/+$/, ''),
@@ -40,18 +55,12 @@ export async function loadConfig(path: string): Promise<SiteConfig> {
   };
 }
 
-/** Reads and checks the publish settings of the config file. */
-export async function loadPublishConfig(path: string): Promise<PublishConfig> {
-  const field = await fieldReader(path);
-  return {
-    rcloneRemote: field.text('rcloneRemote'),
-    r2Bucket: field.text('r2Bucket'),
-    pagesProject: field.text('pagesProject'),
-    pagesBranch: field.text('pagesBranch'),
-  };
+interface FieldReader {
+  text(name: string): string;
+  number(name: string): number;
 }
 
-async function fieldReader(path: string) {
+async function fieldReader(path: string): Promise<FieldReader> {
   const fields = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
   return {
     text(name: string): string {

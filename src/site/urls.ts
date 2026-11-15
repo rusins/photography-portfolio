@@ -15,11 +15,6 @@ export function libraryFileUrl(filesUrl: string, pathInLibrary: string): string 
   return `${filesUrl}/${encodePath(pathInLibrary)}`;
 }
 
-/** The name a downloaded Original or Raw file is saved under, e.g. `Raitis_Krikis-2023-Norway-photo.jpg`. */
-export function downloadName(pathInLibrary: string): string {
-  return `Raitis_Krikis-${pathInLibrary.replaceAll('/', '-')}`;
-}
-
 export function previewUrl(id: ImageId): string {
   return `/preview${encodePath(id)}.jpg`;
 }

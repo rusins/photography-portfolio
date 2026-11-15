@@ -1,4 +1,4 @@
-import { downloadName } from '../site/urls.ts';
+import { downloadName } from '../library/downloadName.ts';
 
 /**
  * The Content-Disposition header that makes the files domain save a Library file under its download name.

@@ -1,11 +1,12 @@
 import type { SiteConfig } from '../config.ts';
+import { downloadName } from '../library/downloadName.ts';
 import { formatLocalDateTime } from '../library/localDateTime.ts';
 import { lastIdPart, type PhotoEntry } from '../library/photoEntry.ts';
 import { escapeHtml } from './html.ts';
 import { htmlDocument } from './layout.ts';
 import { altText } from './photoGrid.ts';
 import { tagList } from './tagPages.ts';
-import { downloadName, imagePageUrl, libraryFileUrl, previewUrl } from './urls.ts';
+import { imagePageUrl, libraryFileUrl, previewUrl } from './urls.ts';
 
 const downloadLinkStyle = "font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 2em; color: black";
 
