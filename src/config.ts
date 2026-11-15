@@ -15,25 +15,54 @@ export interface SiteConfig {
   previewQuality: number;
 }
 
+/** Where `./publish` publishes to, also from `site.config.json`. Credentials stay in the user's rclone and wrangler config. */
+export interface PublishConfig {
+  /** Name of the rclone remote (S3 type, pointing at R2) in the user's rclone config. */
+  rcloneRemote: string;
+  /** The R2 bucket that mirrors the Library and is served at the files URL. */
+  r2Bucket: string;
+  /** The Cloudflare Pages project the site folder is deployed to. */
+  pagesProject: string;
+  /** The Pages project's production branch, so a deploy goes live rather than to a preview. */
+  pagesBranch: string;
+}
+
 /** Reads and checks the config file. */
 export async function loadConfig(path: string): Promise<SiteConfig> {
-  const fields = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
-  const text = (name: keyof SiteConfig) => {
-    const value = fields[name];
-    if (typeof value !== 'string' || value === '') throw new Error(`${path}: "${name}" must be a non-empty string`);
-    return value;
-  };
-  const number = (name: keyof SiteConfig) => {
-    const value = fields[name];
-    if (typeof value !== 'number' || value <= 0) throw new Error(`${path}: "${name}" must be a positive number`);
-    return value;
-  };
+  const field = await fieldReader(path);
   return {
-    siteTitle: text('siteTitle'),
-    siteUrl: text('siteUrl').replace(/\/+$/, ''),
-    filesUrl: text('filesUrl').replace(/\/+$/, ''),
-    libraryPath: text('libraryPath'),
-    previewSize: number('previewSize'),
-    previewQuality: number('previewQuality'),
+    siteTitle: field.text('siteTitle'),
+    siteUrl: field.text('siteUrl').replace(/\/+$/, ''),
+    filesUrl: field.text('filesUrl').replace(/\/+$/, ''),
+    libraryPath: field.text('libraryPath'),
+    previewSize: field.number('previewSize'),
+    previewQuality: field.number('previewQuality'),
+  };
+}
+
+/** Reads and checks the publish settings of the config file. */
+export async function loadPublishConfig(path: string): Promise<PublishConfig> {
+  const field = await fieldReader(path);
+  return {
+    rcloneRemote: field.text('rcloneRemote'),
+    r2Bucket: field.text('r2Bucket'),
+    pagesProject: field.text('pagesProject'),
+    pagesBranch: field.text('pagesBranch'),
+  };
+}
+
+async function fieldReader(path: string) {
+  const fields = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
+  return {
+    text(name: string): string {
+      const value = fields[name];
+      if (typeof value !== 'string' || value === '') throw new Error(`${path}: "${name}" must be a non-empty string`);
+      return value;
+    },
+    number(name: string): number {
+      const value = fields[name];
+      if (typeof value !== 'number' || value <= 0) throw new Error(`${path}: "${name}" must be a positive number`);
+      return value;
+    },
   };
 }
