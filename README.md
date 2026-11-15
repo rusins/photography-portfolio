@@ -5,7 +5,7 @@ My photography portfolio website, [raitis.krikis.id.lv](https://raitis.krikis.id
 It is a static site generator written in TypeScript. It reads the **Library** (a local folder of photos, Albums and a
 license) and writes a folder of plain HTML pages and Previews, which is hosted on Cloudflare Pages. The Originals and
 Raw files themselves are stored in a Cloudflare R2 bucket and downloaded from
-[files.raitis.krikis.id.lv](https://files.raitis.krikis.id.lv). There is no server to run.
+[files.krikis.id.lv](https://files.krikis.id.lv). There is no server to run.
 
 Terms such as Library, Photo entry, Original, Preview, Album and Selector are defined in [GLOSSARY.md](GLOSSARY.md).
 
@@ -14,7 +14,7 @@ looks and behaves as before. The Library layout is the same, so an existing Libr
 
 > **Everything in the Library is public.** `./publish` uploads the *whole* Library folder to R2, not just the photos:
 > `info.json` files, `.album` files, `LICENSE` and anything else you put there. Anyone who knows or guesses a file's
-> exact path can download it from `https://files.raitis.krikis.id.lv/<path within the Library>`. Keep nothing private
+> exact path can download it from `https://files.krikis.id.lv/<path within the Library>`. Keep nothing private
 > in the Library.
 
 ## Contents
@@ -235,7 +235,7 @@ Every key is required (`./build` needs only the first six). Text values must be 
 |---|---|---|
 | `siteTitle` | Shown in the header and in page titles. | `Raitis Krikis Photography` |
 | `siteUrl` | Where the site is hosted, used in the sitemap, `robots.txt` and link previews. | `https://raitis.krikis.id.lv` |
-| `filesUrl` | Where R2 serves the Library's files: the bucket's custom domain. Download links point here. | `https://files.raitis.krikis.id.lv` |
+| `filesUrl` | Where R2 serves the Library's files: the bucket's custom domain. Download links point here. | `https://files.krikis.id.lv` |
 | `libraryPath` | Absolute path of the Library on this computer. | `/home/raitis/Pictures/Photos/Website` |
 | `previewSize` | Length in pixels of a Preview's longest side. Smaller Originals are not enlarged. | `2560` |
 | `previewQuality` | JPEG quality of Previews, from 0 to 1. | `0.7` |
@@ -281,10 +281,20 @@ a site in your Cloudflare account:
    method. That is required even though usage stays mostly within the free tier (see [Cost](#cost)).
 2. **Create bucket**, named `photography-portfolio` (the `r2Bucket` value). Leave the location on automatic and the storage
    class on Standard.
-3. Open the bucket, go to **Settings → Custom Domains → Add**, enter `files.raitis.krikis.id.lv`, and confirm.
+3. Open the bucket, go to **Settings → Custom Domains → Add**, enter `files.krikis.id.lv`, and confirm.
    Cloudflare creates the DNS record itself. Wait until the domain's status is **Active**.
 
-This makes every object in the bucket publicly readable at `https://files.raitis.krikis.id.lv/<path>`, which is how
+   The custom domain must be only one level below the domain you added to Cloudflare (`files.krikis.id.lv`, not
+   `files.raitis.krikis.id.lv`). The free Universal SSL certificate covers `krikis.id.lv` and `*.krikis.id.lv`, and
+   `*` matches one level only. A deeper name gets no certificate, and browsers fail with `SSL_ERROR_NO_CYPHER_OVERLAP`
+   (Firefox) or `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` (Chrome). Covering a deeper name needs the paid Advanced
+   Certificate Manager.
+
+   Also check that no redirect rule or page rule for the domain catches the new name (for example one that sends
+   `krikis.id.lv` and its subdomains to `raitis.krikis.id.lv`). Otherwise downloads are redirected to the site instead
+   of being served from R2.
+
+This makes every object in the bucket publicly readable at `https://files.krikis.id.lv/<path>`, which is how
 the download links work. Leave the bucket's `r2.dev` public development URL disabled; the custom domain is all that is
 needed.
 
