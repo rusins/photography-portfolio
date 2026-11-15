@@ -72,6 +72,16 @@ export class RcloneRemote implements Remote {
     }
   }
 
+  /** `--ignore-times` because the plan already decided these differ, even if size and time match. */
+  async download(paths: string[]): Promise<void> {
+    if (paths.length === 0) return;
+    await this.runner.run(
+      'rclone',
+      ['copy', '--verbose', '--ignore-times', '--no-traverse', '--files-from-raw', '-', this.bucketPath(), this.settings.libraryPath],
+      paths.map((path) => `${path}\n`).join(''),
+    );
+  }
+
   /** One `deletefile` per path: it can only ever delete that one object. */
   async delete(paths: string[]): Promise<void> {
     for (const path of paths) await this.runner.run('rclone', ['deletefile', '--verbose', this.bucketPath(path)]);
