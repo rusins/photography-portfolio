@@ -59,7 +59,11 @@ Two caches are kept in the repository folder (both git-ignored, both safe to del
    case answer no and run `./pull` first), and asks `Delete these N files from R2? [y/N]`. Anything other than `y` or
    `yes` aborts the whole publish: nothing is changed in R2 or on the site.
 5. Uploads new and changed files to R2. Originals and Raw files are stored with a download name, so that "Download
-   Photo" saves e.g. `2023/Norway/Trondheim/photo.jpg` as `Raitis_Krikis-2023-Norway-Trondheim-photo.jpg`.
+   Photo" saves e.g. `2023/Norway/Trondheim/photo.jpg` as `Raitis_Krikis-2023-Norway-Trondheim-photo.jpg`. These are
+   uploaded four at a time; if any upload fails, the publish stops with an error before deleting or deploying anything.
+   Symbolic links in the Library are followed, so R2 gets the files they point to. Only changed files are uploaded, so
+   changing how download names are made in the code does not re-upload files that are already up to date in R2: they
+   keep the name they were uploaded with until their content changes.
 6. Deletes from R2 the files that are no longer in the Library.
 7. Deploys `./site` to the Cloudflare Pages project, on its production branch, so it goes live right away.
 8. Prints how many files were uploaded, unchanged and deleted, and the site's URL.
