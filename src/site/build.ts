@@ -27,7 +27,7 @@ export interface BuildSummary {
 
 /** Reads the Library and writes the static site folder. */
 export async function buildSite({ config, outputPath, previewCachePath, log }: BuildOptions): Promise<BuildSummary> {
-  const entries = await scanLibrary(config.libraryPath, log);
+  const entries = (await scanLibrary(config.libraryPath, log)).filter((entry) => entry.kind === 'photo');
   await rm(outputPath, { recursive: true, force: true });
   await cp(assetsPath, outputPath, { recursive: true });
   const hasLicense = await exists(join(config.libraryPath, 'LICENSE'));
