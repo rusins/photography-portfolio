@@ -24,3 +24,8 @@ export interface PhotoEntry {
   /** Paths within the Library, sorted by name descending. */
   rawFiles: string[];
 }
+
+/** The Image ID's last part, e.g. `Trondheim` for `/2023/Norway/Trondheim`. */
+export function lastIdPart(id: ImageId): string {
+  return id.slice(id.lastIndexOf('/') + 1);
+}

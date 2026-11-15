@@ -20,3 +20,17 @@ export function localDateTime(
     date.getUTCSeconds() === second;
   return isRealDateTime ? date.toISOString().slice(0, 19) : undefined;
 }
+
+const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/** Formats like the old server's `E, MMMM d. yyyy, HH:mm:ss`, e.g. `Tue, December 13. 2022, 19:00:19`. */
+export function formatLocalDateTime(time: LocalDateTime): string {
+  const date = new Date(`${time}Z`);
+  const day = dayNames[date.getUTCDay()];
+  const month = monthNames[date.getUTCMonth()];
+  return `${day}, ${month} ${date.getUTCDate()}. ${date.getUTCFullYear()}, ${time.slice(11, 19)}`;
+}
