@@ -178,7 +178,16 @@ const tinyJpeg = () => sharp({ create: { width: 30, height: 20, channels: 3, bac
  * @param photos Photo entries by Image ID, with their info.json contents
  * @param albums Album file contents by path in the Library
  */
-async function buildLibrary({ photos = {}, albums = {} }: { photos?: Record<string, object>; albums?: Record<string, string> }) {
+async function buildLibrary({
+  photos = {},
+  albums = {},
+  license,
+}: {
+  photos?: Record<string, object>;
+  albums?: Record<string, string>;
+  /** Contents of the Library's LICENSE file, if it has one. */
+  license?: string;
+}) {
   const libraryPath = await mkdtemp(join(tmpdir(), 'library-'));
   for (const [id, info] of Object.entries(photos)) {
     await mkdir(join(libraryPath, id), { recursive: true });
@@ -189,6 +198,7 @@ async function buildLibrary({ photos = {}, albums = {} }: { photos?: Record<stri
     await mkdir(dirname(join(libraryPath, path)), { recursive: true });
     await writeFile(join(libraryPath, path), contents);
   }
+  if (license !== undefined) await writeFile(join(libraryPath, 'LICENSE'), license);
   const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
   const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
   await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log: silentLog });
@@ -362,5 +372,20 @@ describe('buildSite Recent page', () => {
     expect(photoBoxIds(page)).toEqual([
       '/day22', '/day21', '/day20', '/day19', '/day18', '/day17', '/day16', '/day15', '/day14', '/day13', '/day12', '/day11',
     ]);
+  });
+});
+
+describe('buildSite License page', () => {
+  test('shows the LICENSE file\'s contents as text', async () => {
+    const { readPage } = await buildLibrary({ license: 'All rights reserved.\nAsk <me> first & be nice.' });
+    expect(await readPage('license.html')).toContain(
+      '<main><div style="text-align: center; font-size: 4em; font-family: \'Raleway\', sans-serif; font-weight: 200">License</div>' +
+        '<div class="center" style="max-width: 80em">All rights reserved.\nAsk &lt;me&gt; first &amp; be nice.</div></main>',
+    );
+  });
+
+  test('is not written when the Library has no LICENSE file', async () => {
+    const { readPage } = await buildLibrary({});
+    await expect(readPage('license.html')).rejects.toThrow('ENOENT');
   });
 });

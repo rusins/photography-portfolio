@@ -1,4 +1,4 @@
-import { access, copyFile, cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { SiteConfig } from '../config.ts';
@@ -9,6 +9,7 @@ import type { Log } from '../log.ts';
 import { albumPage, albumsPage } from './albumPages.ts';
 import { homePage, recentPage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
+import { licensePage } from './licensePage.ts';
 import { updatePreview } from './previews.ts';
 import { tagPage, tagsPage } from './tagPages.ts';
 
@@ -36,12 +37,13 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
   const entries = library.photoEntries;
   await rm(outputPath, { recursive: true, force: true });
   await cp(assetsPath, outputPath, { recursive: true });
-  const hasLicense = await exists(join(config.libraryPath, 'LICENSE'));
+  const license = await readLicense(config.libraryPath);
   let previewsGenerated = 0;
   for (const entry of entries) {
     if (await writePreview(entry, config, outputPath, previewCachePath)) previewsGenerated++;
-    await writeOutputFile(join(outputPath, 'image', `${entry.id}.html`), imagePage(entry, config, hasLicense));
+    await writeOutputFile(join(outputPath, 'image', `${entry.id}.html`), imagePage(entry, config, license !== undefined));
   }
+  if (license !== undefined) await writeOutputFile(join(outputPath, 'license.html'), licensePage(license, config));
   await writeOutputFile(join(outputPath, 'index.html'), homePage(library, config));
   await writeOutputFile(join(outputPath, 'recent.html'), recentPage(library, config));
   await writeOutputFile(join(outputPath, 'albums.html'), albumsPage(library, config));
@@ -81,11 +83,12 @@ async function writeOutputFile(path: string, contents: string): Promise<void> {
   await writeFile(path, contents);
 }
 
-async function exists(path: string): Promise<boolean> {
+/** The contents of the Library's LICENSE file, or undefined if it has none. */
+async function readLicense(libraryPath: string): Promise<string | undefined> {
   try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
+    return await readFile(join(libraryPath, 'LICENSE'), 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw error;
   }
 }
