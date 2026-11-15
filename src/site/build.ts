@@ -14,6 +14,7 @@ import { licensePage } from './licensePage.ts';
 import { updatePreview } from './previews.ts';
 import { robotsTxt, sitemap } from './seo.ts';
 import { tagPage, tagsPage } from './tagPages.ts';
+import { tagCanHavePage } from './urls.ts';
 
 /** Favicon, CSS and JavaScript, copied as they are to the site folder. */
 const assetsPath = fileURLToPath(new URL('../../assets', import.meta.url));
@@ -52,14 +53,24 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
   for (const album of library.albums) {
     await writeOutputFile(join(outputPath, 'album', `${album.id}.html`), albumPage(library, album, config));
   }
-  await writeOutputFile(join(outputPath, 'tags.html'), tagsPage(library.tags, config));
-  for (const tag of library.tags) {
+  const tags = tagsWithPages(library.tags, log);
+  await writeOutputFile(join(outputPath, 'tags.html'), tagsPage(tags, config));
+  for (const tag of tags) {
     await writeOutputFile(join(outputPath, 'tag', `${tag}.html`), tagPage(tag, entries, config));
   }
   await writeOutputFile(join(outputPath, '404.html'), notFoundPage(config.siteTitle));
   await writeOutputFile(join(outputPath, 'sitemap.xml'), sitemap(library, config.siteUrl));
   await writeOutputFile(join(outputPath, 'robots.txt'), robotsTxt(config.siteUrl));
   return { photoEntries: entries.length, albums: library.albums.length, previewsGenerated };
+}
+
+/** The Tags that can have a page of their own, warning about the others. */
+function tagsWithPages(tags: string[], log: Log): string[] {
+  const skipped = tags.filter((tag) => !tagCanHavePage(tag));
+  if (skipped.length > 0) {
+    log.warn(`Tags that cannot have a page of their own, skipped: ${skipped.map((tag) => JSON.stringify(tag)).join(', ')}`);
+  }
+  return tags.filter(tagCanHavePage);
 }
 
 /**

@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { buildSite, type BuildSummary } from '../../src/site/build.ts';
 import type { SiteConfig } from '../../src/config.ts';
+import type { Log } from '../../src/log.ts';
 
 const exampleLibrary = fileURLToPath(new URL('../fixtures/example_data_dir', import.meta.url));
 
@@ -182,11 +183,13 @@ async function buildLibrary({
   photos = {},
   albums = {},
   license,
+  log = silentLog,
 }: {
   photos?: Record<string, object>;
   albums?: Record<string, string>;
   /** Contents of the Library's LICENSE file, if it has one. */
   license?: string;
+  log?: Log;
 }) {
   const libraryPath = await mkdtemp(join(tmpdir(), 'library-'));
   for (const [id, info] of Object.entries(photos)) {
@@ -201,7 +204,7 @@ async function buildLibrary({
   if (license !== undefined) await writeFile(join(libraryPath, 'LICENSE'), license);
   const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
   const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
-  await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log: silentLog });
+  await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log });
   return { readPage: (path: string) => readFile(join(outputPath, path), 'utf8') };
 }
 
@@ -343,6 +346,28 @@ describe('buildSite Tag pages', () => {
     expect(page).toContain(
       '<main><h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300">Images tagged: Gauja valley</h1><div style="margin: 1em"><div class="columns"><div class="photo-box animated-padding"><a href="/image/a"',
     );
+  });
+});
+
+describe('buildSite Tags with slashes', () => {
+  test('a Tag with a slash links to the page it is written to', async () => {
+    const { readPage } = await buildLibrary({ photos: { '/a': { tags: ['places/Rīga'] } } });
+    expect(await readPage('image/a.html')).toContain('<a class="pure-menu-link" href="/tag/places/R%C4%ABga">places/Rīga</a>');
+    expect(photoBoxIds(await readPage('tag/places/Rīga.html'))).toEqual(['/a']);
+  });
+
+  test('Tags that are empty or have empty, . or .. parts get no page, with a warning', async () => {
+    const warnings: string[] = [];
+    const { readPage } = await buildLibrary({
+      photos: { '/a': { tags: ['', '..', '../index', 'x/./y', 'x//y', 'ok'] } },
+      log: { warn: (message) => warnings.push(message) },
+    });
+    expect(warnings).toEqual(['Tags that cannot have a page of their own, skipped: "", "..", "../index", "x/./y", "x//y"']);
+    expect(await readPage('index.html')).toContain('<meta property="og:url" content="https://photos.example">');
+    expect(await readPage('tags.html')).toContain(
+      '<ul class="pure-menu-list"><li class="pure-menu-item"><a class="pure-menu-link" href="/tag/ok">ok</a></li></ul>',
+    );
+    await expect(readPage('tag/x/y.html')).rejects.toThrow('ENOENT');
   });
 });
 

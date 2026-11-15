@@ -25,9 +25,17 @@ export function previewUrl(id: ImageId): string {
 }
 
 export function tagPageUrl(tag: string): string {
-  return `/tag/${encodeURIComponent(tag)}`;
+  return `/tag/${encodePath(tag)}`;
 }
 
 export function albumPageUrl(id: AlbumId): string {
   return `/album${encodePath(id)}`;
+}
+
+/**
+ * Whether a Tag can have a page of its own at `tag/<tag>.html`: one with an empty, `.` or `..` part
+ * would be written outside that folder or over another page.
+ */
+export function tagCanHavePage(tag: string): boolean {
+  return tag.split('/').every((part) => part !== '' && part !== '.' && part !== '..');
 }
