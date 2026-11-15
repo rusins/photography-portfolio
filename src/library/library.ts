@@ -42,6 +42,10 @@ export class Library {
     return this.entries.filter((entry) => entry.kind === 'photo');
   }
 
+  get albums(): Album[] {
+    return this.entries.filter((entry) => entry.kind === 'album');
+  }
+
   /** The Album `/Best` or `/best`, whose Photo entries fill the home page. */
   get bestAlbum(): Album | undefined {
     return this.entries.find((entry): entry is Album => entry.kind === 'album' && (entry.id === '/Best' || entry.id === '/best'));

@@ -1,3 +1,4 @@
+import type { AlbumId } from '../library/album.ts';
 import type { ImageId } from '../library/photoEntry.ts';
 
 /** Percent-encodes each segment of a `/`-separated path, so spaces and non-ASCII work in links. */
@@ -25,4 +26,8 @@ export function previewUrl(id: ImageId): string {
 
 export function tagPageUrl(tag: string): string {
   return `/tag/${encodeURIComponent(tag)}`;
+}
+
+export function albumPageUrl(id: AlbumId): string {
+  return `/album${encodePath(id)}`;
 }

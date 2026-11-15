@@ -229,3 +229,78 @@ describe('buildSite home page', () => {
     expect(home).toContain('<meta property="og:image" content="https://photos.example/preview/b.jpg">');
   });
 });
+
+/** The Album IDs of the Album links on a page, in order. */
+function albumLinkIds(page: string): string[] {
+  return [...page.matchAll(/ href="\/album(\/[^"]*)"/g)].map((match) => decodeURIComponent(match[1] ?? ''));
+}
+
+describe('buildSite Albums page', () => {
+  test('lists only the orphan Albums, sorted by name', async () => {
+    const { readPage } = await buildLibrary({
+      photos: { '/x': {} },
+      albums: { 'Zebra.album': 'trips', 'Apple.album': '/x', 'trips.album': '/x', 'folder/Mango.album': '/x' },
+    });
+    expect(albumLinkIds(await readPage('albums.html'))).toEqual(['/Apple', '/folder/Mango', '/Zebra']);
+  });
+
+  test('alternates the cover image between left and right, as before', async () => {
+    const { readPage } = await buildLibrary({
+      photos: { '/2023/my_backyard': {} },
+      albums: { 'Garden.album': 'Year', 'Year.album': '/2023/*', 'Zvārtes Iezis.album': '/nothing' },
+    });
+    const textStyle = "width: 48em; flex-grow: 1; text-align: center; font-family: 'Raleway', sans-serif";
+    expect(await readPage('albums.html')).toContain(
+      '<main><div><h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300"></h1><div class="center" style="max-width: 120em"><div>' +
+        '<a up-transition="move-left" style="color: black; text-decoration: none" href="/album/Garden"><div style="display: flex; align-items: center; background-color: lightgrey; margin: 1em">' +
+        '<div style="align: left; flex-shrink: 1" class="photo-box"><img style="max-height: 36em" src="/preview/2023/my_backyard.jpg" alt="An image of my backyard."></div>' +
+        `<div style="${textStyle}" up-transition="move-left"><h1 class="album-link-text">Garden</h1></div></div></a>` +
+        '<a up-transition="move-left" style="color: black; text-decoration: none" href="/album/Zv%C4%81rtes%20Iezis"><div style="display: flex; align-items: center; background-color: lightgrey; margin: 1em">' +
+        `<div style="${textStyle}" up-transition="move-left"><h1 class="album-link-text">Zvārtes Iezis</h1></div>` +
+        '<div style="align: right; flex-shrink: 1" class="photo-box"><img style="max-height: 36em" src="/img/image-not-found.jpg" alt="Image not found."></div></div></a>' +
+        '</div></div><div class="center" style="max-width: 120em"></div></div></main>',
+    );
+  });
+});
+
+describe('buildSite Album pages', () => {
+  let readPage: (path: string) => Promise<string>;
+
+  beforeAll(async () => {
+    ({ readPage } = await buildLibrary({
+      photos: {
+        '/trip/b': { time: '2024-02-01T12:00:00' },
+        '/trip/a': { time: '2024-01-01T12:00:00' },
+        '/trip/u1': {},
+        '/trip/u2': {},
+      },
+      albums: {
+        'Trip.album': 'trip/u2\ntrip/b\ntrip/Zoo\ntrip/u1\ntrip/a\ntrip/Arctic',
+        'trip/Zoo.album': 'a',
+        'trip/Arctic.album': '/nothing',
+      },
+    }));
+  });
+
+  test('list sub-Albums by name, then Photo entries by time, untimed ones first in Selector order', async () => {
+    const page = await readPage('album/Trip.html');
+    expect(page).toContain('<h1 style="text-align: center; font-family: \'Raleway\', sans-serif; font-weight: 300">Trip</h1>');
+    expect(albumLinkIds(page)).toEqual(['/trip/Arctic', '/trip/Zoo']);
+    expect(photoBoxIds(page)).toEqual(['/trip/u2', '/trip/u1', '/trip/a', '/trip/b']);
+  });
+
+  test('have Open Graph tags with the first child\'s Preview', async () => {
+    const page = await readPage('album/Trip.html');
+    expect(page).toContain('<meta property="og:title" content="Trip | Test Photography">');
+    expect(page).toContain('<meta property="og:url" content="https://photos.example/album/Trip">');
+    expect(page).toContain('<meta property="og:image" content="https://photos.example/preview/trip/u2.jpg">');
+  });
+
+  test('have the navigation header', async () => {
+    expect(await readPage('album/trip/Zoo.html')).toContain('<header><div id="menuToggle"');
+  });
+
+  test('say so for an Album without entries', async () => {
+    expect(await readPage('album/trip/Arctic.html')).toContain('<main><h1>Album entries for /trip/Arctic not found! D:</h1></main>');
+  });
+});

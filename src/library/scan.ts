@@ -3,6 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import exifr from 'exifr';
 import type { Log } from '../log.ts';
+import { compareText } from './compareText.ts';
 import { fillFromExif, type ExifTags } from './exif.ts';
 import { albumPattern, originalPattern, rawFilePattern } from './patterns.ts';
 import type { Album, LibraryEntry } from './album.ts';
@@ -130,11 +131,6 @@ async function kindOf(child: Dirent, folder: string): Promise<'file' | 'folder' 
     }
   }
   return child.isFile() ? 'file' : child.isDirectory() ? 'folder' : 'other';
-}
-
-/** Compares by UTF-16 code units, like Java's String ordering. */
-function compareText(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 async function readAlbum(libraryPath: string, folderPath: string, fileName: string, log: Log): Promise<Album | undefined> {
