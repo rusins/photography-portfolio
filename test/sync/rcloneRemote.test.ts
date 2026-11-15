@@ -76,10 +76,23 @@ describe('RcloneRemote', () => {
     ]);
   });
 
-  test('runs nothing when there is nothing to upload or delete', async () => {
+  test('downloads files in one batch into the Library at the same paths, replacing what the Library has', async () => {
+    const { runner, calls } = recordingRunner();
+    await new RcloneRemote(settings, runner).download(['2023/Norway Trip/Diena 1 ā.jpg', 'LICENSE']);
+    expect(calls).toEqual([
+      {
+        command: 'rclone',
+        args: ['copy', '--verbose', '--ignore-times', '--no-traverse', '--files-from-raw', '-', 'r2:photos', '/photos/Library'],
+        input: '2023/Norway Trip/Diena 1 ā.jpg\nLICENSE\n',
+      },
+    ]);
+  });
+
+  test('runs nothing when there is nothing to upload, download or delete', async () => {
     const { runner, calls } = recordingRunner();
     const remote = new RcloneRemote(settings, runner);
     await remote.upload([]);
+    await remote.download([]);
     await remote.delete([]);
     expect(calls).toEqual([]);
   });

@@ -10,5 +10,7 @@ export interface Upload {
 export interface Remote {
   list(): Promise<RemoteFile[]>;
   upload(uploads: Upload[]): Promise<void>;
+  /** Copies these files from R2 into the Library at the same paths, replacing what is there. */
+  download(paths: string[]): Promise<void>;
   delete(paths: string[]): Promise<void>;
 }
