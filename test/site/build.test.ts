@@ -86,7 +86,7 @@ describe('buildSite with the example Library', () => {
     );
   });
 
-  test('the home page has the old navigation header, without Random', async () => {
+  test('the home page has the old navigation header, with Random after Tags', async () => {
     const home = await readFile(join(outputPath, 'index.html'), 'utf8');
     expect(home).toContain(
       '<body><header><div id="menuToggle" onclick="toggleMenu()">☰</div><nav id="menu" class="navigation pure-menu"><ul class="pure-menu-list">' +
@@ -94,9 +94,9 @@ describe('buildSite with the example Library', () => {
         '<li class="pure-menu-item"><a class="pure-menu-link" up-instant href="/recent" onclick="toggleMenu()">Recent</a></li>' +
         '<li class="pure-menu-item"><a class="pure-menu-link" up-instant href="/albums" onclick="toggleMenu()">Albums</a></li>' +
         '<li class="pure-menu-item"><a class="pure-menu-link" up-preload href="/tags" onclick="toggleMenu()">Tags</a></li>' +
+        '<li class="pure-menu-item"><a class="pure-menu-link" up-instant href="/random" onclick="toggleMenu()">Random</a></li>' +
         '</ul></nav><span class="pure-menu-heading" style="text-align: center"><a href="/" class="pure-menu-link" up-follow style="display: inline">Test Photography</a></span></header><main><div style="margin: 1em 1em 0">',
     );
-    expect(home).not.toContain('Random');
   });
 });
 
@@ -432,6 +432,32 @@ describe('buildSite Recent page', () => {
     expect(photoBoxIds(page)).toEqual([
       '/day22', '/day21', '/day20', '/day19', '/day18', '/day17', '/day16', '/day15', '/day14', '/day13', '/day12', '/day11',
     ]);
+  });
+});
+
+describe('buildSite Random page', () => {
+  test('with the example Library, holds the Photo entry\'s photo box in a template next to empty columns, with the navigation header', async () => {
+    const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
+    const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
+    await buildSite({ config, outputPath, previewCachePath, log: silentLog });
+    const page = await readFile(join(outputPath, 'random.html'), 'utf8');
+    expect(page).toContain('<header><div id="menuToggle"');
+    expect(page).toContain(
+      '<div class="random-photos" style="margin: 1em 1em 0"><template>' +
+        '<div class="photo-box animated-padding"><a href="/image/day-night" up-layer="new" up-history="false" up-size="large"><img src="/preview/day-night.jpg" alt="An image of day night."></a></div>' +
+        '</template><div class="columns"></div></div>',
+    );
+  });
+
+  test('holds exactly one photo box per Photo entry, and a noscript note pointing to the Recent page', async () => {
+    const { readPage } = await buildLibrary({
+      photos: { '/a': {}, '/trip/b': { time: '2024-01-01T12:00:00' }, '/c': {} },
+      albums: { 'Best.album': '/a' },
+    });
+    const page = await readPage('random.html');
+    const template = /<template>(.*)<\/template>/s.exec(page)?.[1] ?? '';
+    expect(photoBoxIds(template).toSorted()).toEqual(['/a', '/c', '/trip/b']);
+    expect(page).toMatch(/<noscript>[^<]*<a href="\/recent"[^>]*>[^<]*<\/a>[^<]*<\/noscript>/);
   });
 });
 

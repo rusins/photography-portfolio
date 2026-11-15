@@ -57,6 +57,7 @@ export function pageWithNavigation(siteTitle: string, openGraph: OpenGraph | und
     menuItem('up-instant', '/recent', 'Recent') +
     menuItem('up-instant', '/albums', 'Albums') +
     menuItem('up-preload', '/tags', 'Tags') +
+    menuItem('up-instant', '/random', 'Random') +
     `</ul></nav><span class="pure-menu-heading" style="text-align: center"><a href="/" class="pure-menu-link" up-follow style="display: inline">${escapeHtml(siteTitle)}</a></span></header>`;
   return htmlDocument(siteTitle, openGraph, `${header}<main>${content}</main>`);
 }
