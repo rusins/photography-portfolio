@@ -7,6 +7,6 @@
   "previewQuality": 0.7,
   "rcloneRemote": "r2",
   "r2Bucket": "photography-portfolio",
-  "pagesProject": "portfolio",
+  "pagesProject": "photography-portfolio",
   "pagesBranch": "main"
 }

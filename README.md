@@ -242,7 +242,7 @@ Every key is required (`./build` needs only the first six). Text values must be 
 | `previewQuality` | JPEG quality of Previews, from 0 to 1. | `0.7` |
 | `rcloneRemote` | Name of the rclone remote for R2 in your `rclone.conf`. | `r2` |
 | `r2Bucket` | Name of the R2 bucket that mirrors the Library. | `photography-portfolio` |
-| `pagesProject` | Name of the Cloudflare Pages project. | `portfolio` |
+| `pagesProject` | Name of the Cloudflare Pages project. | `photography-portfolio` |
 | `pagesBranch` | The Pages project's production branch, so a deploy goes live instead of becoming a preview. | `main` |
 
 **Check these before your first publish; the committed values are placeholders that must match your setup:**
@@ -257,8 +257,8 @@ and wrangler config.
 
 ## One-time Cloudflare setup
 
-This is done once. It assumes you have never used Cloudflare. The names below (`photography-portfolio`, `r2`, `portfolio`,
-`main`) are the ones in `site.config.json`; if you pick others, change the config to match.
+This is done once. It assumes you have never used Cloudflare. The names below (`photography-portfolio`, `r2`, `main`) are
+the ones in `site.config.json`; if you pick others, change the config to match.
 
 ### 1. Create a Cloudflare account
 
@@ -338,15 +338,16 @@ wrangler, so Pages is not connected to git.
 Create it from the command line, with the `pagesProject` and `pagesBranch` values:
 
 ```sh
-nix-shell --run 'wrangler pages project create portfolio --production-branch main'
+nix-shell --run 'wrangler pages project create photography-portfolio --production-branch main'
 ```
 
-Or in the dashboard: **Workers & Pages → Create → Pages → Upload assets (direct upload)**, project name `portfolio`.
+Or in the dashboard: **Workers & Pages → Create → Pages → Upload assets (direct upload)**, project name
+`photography-portfolio`.
 A dashboard-created project's production branch is `main`; it must equal `pagesBranch`, or every publish becomes a
 preview deployment instead of the live site.
 
-The project is reachable at `https://portfolio.pages.dev` (Cloudflare may add a suffix if the name is taken) after the
-first publish.
+The project is reachable at `https://photography-portfolio.pages.dev` (Cloudflare may add a suffix if the name is
+taken) after the first publish.
 
 ### 7. Set the real values in site.config.json
 
@@ -363,7 +364,7 @@ The first publish uploads the whole Library (about 13 GB), which takes a while o
 interrupted, just run it again: files already in R2 with the right content are skipped. The Library's old `sync.sh` is
 obsolete; remove it from the Library before this first publish so it is not uploaded.
 
-Check the site at `https://portfolio.pages.dev` and that "Download Photo" works.
+Check the site at `https://photography-portfolio.pages.dev` and that "Download Photo" works.
 
 ### 9. Point raitis.krikis.id.lv at the Pages project
 
