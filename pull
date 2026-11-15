@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 if ! command -v node >/dev/null || ! command -v rclone >/dev/null; then
-  exec nix-shell --run "./pull $*"
+  exec nix-shell --run "$(printf '%q ' ./pull "$@")"
 fi
 [ -d node_modules ] || npm ci
 node src/cli/pull.ts "$@"
