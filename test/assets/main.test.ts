@@ -16,16 +16,14 @@ function loadScript(): Record<string, any> & { compilers: Map<string, Compiler> 
   return Object.assign(context, { compilers });
 }
 
-/** A fake `.random-photos` element whose template holds `boxCount` photo boxes. */
+/** A fake `.random-photos` element storing `boxCount` photo boxes' HTML, as the build writes them. */
 function randomPhotosElement(boxCount: number) {
-  const boxes = Array.from({ length: boxCount }, (_, id) => ({
-    id,
-    cloneNode: (deep: boolean) => ({ cloneOf: id, deep }),
-  }));
-  const columns = { children: [] as unknown[], replaceChildren: (...nodes: unknown[]) => (columns.children = nodes) };
-  const template = { content: { children: boxes } };
-  const parts: Record<string, unknown> = { template, '.columns': columns };
-  const element = { querySelector: (selector: string) => parts[selector] ?? null };
+  const boxes = Array.from({ length: boxCount }, (_, id) => `<div class="photo-box" id="${id}"></div>`);
+  const columns = { innerHTML: '<p>old</p>' };
+  const element = {
+    dataset: { photoBoxes: JSON.stringify(boxes) },
+    querySelector: (selector: string) => (selector === '.columns' ? columns : null),
+  };
   return { element, columns };
 }
 
@@ -57,15 +55,15 @@ test.each([
   [30, 12],
   [12, 12],
   [5, 5],
-])('the .random-photos compiler fills columns with deep clones of distinct boxes (%i boxes → %i)', (boxes, shown) => {
+])('the .random-photos compiler replaces the columns with distinct stored boxes (%i boxes → %i)', (boxes, shown) => {
   const compiler = loadScript().compilers.get('.random-photos')!;
   const { element, columns } = randomPhotosElement(boxes);
-  columns.children = [{ old: true }];
 
   compiler(element);
 
-  const clones = columns.children as { cloneOf: number; deep: boolean }[];
-  expect(clones).toHaveLength(shown);
-  expect(new Set(clones.map((clone) => clone.cloneOf)).size).toBe(shown);
-  expect(clones.every((clone) => clone.cloneOf >= 0 && clone.cloneOf < boxes && clone.deep)).toBe(true);
+  const ids = [...columns.innerHTML.matchAll(/<div class="photo-box" id="(\d+)"><\/div>/g)].map((match) => Number(match[1]));
+  expect(columns.innerHTML).toBe(ids.map((id) => `<div class="photo-box" id="${id}"></div>`).join(''));
+  expect(ids).toHaveLength(shown);
+  expect(new Set(ids).size).toBe(shown);
+  expect(ids.every((id) => id >= 0 && id < boxes)).toBe(true);
 });

@@ -436,27 +436,38 @@ describe('buildSite Recent page', () => {
 });
 
 describe('buildSite Random page', () => {
-  test('with the example Library, holds the Photo entry\'s photo box in a template next to empty columns, with the navigation header', async () => {
+  /** The photo boxes the Random page keeps in its `data-photo-boxes` attribute. */
+  function storedPhotoBoxes(page: string): string[] {
+    const attribute = /<div class="random-photos" data-photo-boxes="([^"]*)"/.exec(page)?.[1];
+    expect(attribute).toBeDefined();
+    const json = attribute!.replaceAll('&quot;', '"').replaceAll('&#x27;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
+    return JSON.parse(json);
+  }
+
+  test('with the example Library, keeps the Photo entry\'s photo box in an attribute next to empty columns, with the navigation header', async () => {
     const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
     const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
     await buildSite({ config, outputPath, previewCachePath, log: silentLog });
     const page = await readFile(join(outputPath, 'random.html'), 'utf8');
     expect(page).toContain('<header><div id="menuToggle"');
-    expect(page).toContain(
-      '<div class="random-photos" style="margin: 1em 1em 0"><template>' +
-        '<div class="photo-box animated-padding"><a href="/image/day-night" up-layer="new" up-history="false" up-size="large"><img src="/preview/day-night.jpg" alt="An image of day night."></a></div>' +
-        '</template><div class="columns"></div></div>',
-    );
+    expect(storedPhotoBoxes(page)).toEqual([
+      '<div class="photo-box animated-padding"><a href="/image/day-night" up-layer="new" up-history="false" up-size="large"><img src="/preview/day-night.jpg" alt="An image of day night."></a></div>',
+    ]);
+    expect(page).toMatch(/<div class="random-photos" data-photo-boxes="[^"]*" style="margin: 1em 1em 0"><div class="columns"><\/div><\/div>/);
   });
 
-  test('holds exactly one photo box per Photo entry, and a noscript note pointing to the Recent page', async () => {
+  test('has no image elements, so browsers (Firefox preloads even <template> images) load no Previews until main.js picks some', async () => {
+    const { readPage } = await buildLibrary({ photos: { '/a': {}, '/b': {} } });
+    expect(await readPage('random.html')).not.toContain('<img');
+  });
+
+  test('keeps exactly one photo box per Photo entry, and a noscript note pointing to the Recent page', async () => {
     const { readPage } = await buildLibrary({
       photos: { '/a': {}, '/trip/b': { time: '2024-01-01T12:00:00' }, '/c': {} },
       albums: { 'Best.album': '/a' },
     });
     const page = await readPage('random.html');
-    const template = /<template>(.*)<\/template>/s.exec(page)?.[1] ?? '';
-    expect(photoBoxIds(template).toSorted()).toEqual(['/a', '/c', '/trip/b']);
+    expect(storedPhotoBoxes(page).flatMap(photoBoxIds).toSorted()).toEqual(['/a', '/c', '/trip/b']);
     expect(page).toMatch(/<noscript>[^<]*<a href="\/recent"[^>]*>[^<]*<\/a>[^<]*<\/noscript>/);
   });
 });

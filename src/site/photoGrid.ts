@@ -5,12 +5,12 @@ import { imagePageUrl, previewUrl } from './urls.ts';
 
 /** Previews linking to their image pages, which open as Unpoly pop-overs. */
 export function photoBoxes(entries: PhotoEntry[]): string {
-  return entries
-    .map(
-      (entry) =>
-        `<div class="photo-box animated-padding"><a href="${escapeHtml(imagePageUrl(entry.id))}" up-layer="new" up-history="false" up-size="large"><img src="${escapeHtml(previewUrl(entry.id))}" alt="${escapeHtml(altText(entry.id))}"></a></div>`,
-    )
-    .join('');
+  return entries.map(photoBox).join('');
+}
+
+/** A Preview linking to its image page, which opens as an Unpoly pop-over. */
+function photoBox(entry: PhotoEntry): string {
+  return `<div class="photo-box animated-padding"><a href="${escapeHtml(imagePageUrl(entry.id))}" up-layer="new" up-history="false" up-size="large"><img src="${escapeHtml(previewUrl(entry.id))}" alt="${escapeHtml(altText(entry.id))}"></a></div>`;
 }
 
 /** Photo boxes in columns. */
@@ -29,9 +29,11 @@ export function altText(id: ImageId): string {
 }
 
 /**
- * Photo boxes kept in a `<template>`, so browsers load none of their Previews, next to empty columns that main.js
- * fills with clones of up to 12 of them, picked at random each time the grid is shown.
+ * Empty columns that main.js fills with up to 12 photo boxes, picked at random each time the grid is shown. The boxes'
+ * HTML is kept as a JSON array of strings in an attribute, not as elements: browsers would load the Previews of
+ * `<img>` elements even inside a `<template>` (Firefox preloads them), i.e. every Preview in the Library.
  */
 export function randomImageGrid(entries: PhotoEntry[]): string {
-  return gridContainer(' class="random-photos"', `<template>${photoBoxes(entries)}</template><div class="columns"></div>`);
+  const boxes = escapeHtml(JSON.stringify(entries.map(photoBox)));
+  return gridContainer(` class="random-photos" data-photo-boxes="${boxes}"`, '<div class="columns"></div>');
 }

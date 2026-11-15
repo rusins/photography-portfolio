@@ -21,9 +21,9 @@ function pickRandom(items, count) {
 /** How many photos the Random page shows. */
 const randomPhotoCount = 12;
 
-// Each time the Random page's grid is inserted, show clones of a random pick of the photo boxes in its template.
+// Each time the Random page's grid is inserted, show a random pick of the photo boxes stored in its attribute.
+// Only the picked boxes become elements, so only their Previews are loaded.
 up.compiler('.random-photos', function (element) {
-    const boxes = element.querySelector('template').content.children;
-    const picked = pickRandom(boxes, randomPhotoCount).map((box) => box.cloneNode(true));
-    element.querySelector('.columns').replaceChildren(...picked);
+    const boxes = JSON.parse(element.dataset.photoBoxes);
+    element.querySelector('.columns').innerHTML = pickRandom(boxes, randomPhotoCount).join('');
 });
