@@ -11,7 +11,7 @@ import { homePage, recentPage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
 import { notFoundPage } from './layout.ts';
 import { licensePage } from './licensePage.ts';
-import { updatePreview } from './previews.ts';
+import { prunePreviewCache, updatePreview } from './previews.ts';
 import { robotsTxt, sitemap } from './seo.ts';
 import { tagPage, tagsPage } from './tagPages.ts';
 import { tagCanHavePage } from './urls.ts';
@@ -46,6 +46,7 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
     if (await writePreview(entry, config, outputPath, previewCachePath)) previewsGenerated++;
     await writeOutputFile(join(outputPath, 'image', `${entry.id}.html`), imagePage(entry, config, license !== undefined));
   }
+  await prunePreviewCache(previewCachePath, entries.map((entry) => cachedPreviewPath(previewCachePath, entry)));
   if (license !== undefined) await writeOutputFile(join(outputPath, 'license.html'), licensePage(license, config));
   await writeOutputFile(join(outputPath, 'index.html'), homePage(library, config));
   await writeOutputFile(join(outputPath, 'recent.html'), recentPage(library, config));
@@ -83,8 +84,8 @@ async function writePreview(
   outputPath: string,
   previewCachePath: string,
 ): Promise<boolean> {
-  const cachedPreview = join(previewCachePath, `${entry.id}.jpg`);
-  const generated = await updatePreview(join(config.libraryPath, entry.originals[0]), cachedPreview, {
+  const cachedPreview = cachedPreviewPath(previewCachePath, entry);
+  const generated = await updatePreview(config.libraryPath, entry.originals[0], cachedPreview, {
     size: config.previewSize,
     quality: config.previewQuality,
   });
@@ -92,6 +93,10 @@ async function writePreview(
   await mkdir(dirname(outputPreview), { recursive: true });
   await copyFile(cachedPreview, outputPreview);
   return generated;
+}
+
+function cachedPreviewPath(previewCachePath: string, entry: PhotoEntry): string {
+  return join(previewCachePath, `${entry.id}.jpg`);
 }
 
 async function writeOutputFile(path: string, contents: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, stat, utimes, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -118,7 +118,7 @@ describe('buildSite Preview cache', () => {
         log: silentLog,
       });
     const previewCachePath = await mkdtemp(join(tmpdir(), 'preview-cache-'));
-    return { originalPath, build };
+    return { libraryPath, originalPath, previewCachePath, build };
   }
 
   test('a touched but unchanged Original regenerates no Preview', async () => {
@@ -133,6 +133,41 @@ describe('buildSite Preview cache', () => {
     await build();
     await writeFile(originalPath, await solidJpeg(0));
     expect((await build()).previewsGenerated).toBe(1);
+  });
+
+  test('a new first Original regenerates the Preview, even with the same content as the old one', async () => {
+    const { libraryPath, originalPath, build } = await libraryWithOnePhoto();
+    await build();
+    await copyFile(originalPath, join(libraryPath, 'photo', 'photo-edited.jpg'));
+    expect((await build()).previewsGenerated).toBe(1);
+  });
+
+  test('removing the first Original regenerates the Preview from the next one, even with the same content', async () => {
+    const { libraryPath, originalPath, build } = await libraryWithOnePhoto();
+    const editedPath = join(libraryPath, 'photo', 'photo-edited.jpg');
+    await copyFile(originalPath, editedPath);
+    await build();
+    await rm(editedPath);
+    expect((await build()).previewsGenerated).toBe(1);
+  });
+
+  test('an empty Library builds without a Preview cache folder', async () => {
+    const libraryPath = await mkdtemp(join(tmpdir(), 'library-'));
+    const previewCachePath = join(await mkdtemp(join(tmpdir(), 'preview-cache-')), 'not yet made');
+    const outputPath = await mkdtemp(join(tmpdir(), 'site-'));
+    const summary = await buildSite({ config: { ...config, libraryPath }, outputPath, previewCachePath, log: silentLog });
+    expect(summary).toEqual({ photoEntries: 0, albums: 0, previewsGenerated: 0 });
+  });
+
+  test('Previews of Photo entries no longer in the Library are removed from the cache', async () => {
+    const { libraryPath, previewCachePath, build } = await libraryWithOnePhoto();
+    await mkdir(join(libraryPath, 'trip', 'gone'), { recursive: true });
+    await writeFile(join(libraryPath, 'trip', 'gone', 'info.json'), '{}');
+    await writeFile(join(libraryPath, 'trip', 'gone', 'gone.jpg'), await solidJpeg(9));
+    await build();
+    await rm(join(libraryPath, 'trip'), { recursive: true });
+    await build();
+    expect((await readdir(previewCachePath, { recursive: true })).toSorted()).toEqual(['photo.jpg', 'photo.jpg.source.json']);
   });
 });
 
