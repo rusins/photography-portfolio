@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Builds the static site into ./site from the Library named in site.config.json.
+# Usage: ./build [config file]
+set -euo pipefail
+cd "$(dirname "$0")"
+if ! command -v node >/dev/null; then
+  exec nix-shell --run "./build $*"
+fi
+[ -d node_modules ] || npm ci
+node src/cli/build.ts "$@"
