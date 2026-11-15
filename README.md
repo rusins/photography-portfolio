@@ -10,8 +10,7 @@ Raw files themselves are stored in a Cloudflare R2 bucket and downloaded from
 Terms such as Library, Photo entry, Original, Preview, Album and Selector are defined in [GLOSSARY.md](GLOSSARY.md).
 
 History: this replaces portfolzio, the old Scala/ZIO server that used to run the site. The site
-looks and behaves as before, except that the Random page is gone. The Library layout is the same, so an existing
-Library works without changes.
+looks and behaves as before. The Library layout is the same, so an existing Library works without changes.
 
 > **Everything in the Library is public.** `./publish` uploads the *whole* Library folder to R2, not just the photos:
 > `info.json` files, `.album` files, `LICENSE` and anything else you put there. Anyone who knows or guesses a file's
