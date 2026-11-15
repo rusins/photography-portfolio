@@ -11,6 +11,7 @@ import { homePage, recentPage } from './homePage.ts';
 import { imagePage } from './imagePage.ts';
 import { licensePage } from './licensePage.ts';
 import { updatePreview } from './previews.ts';
+import { robotsTxt, sitemap } from './seo.ts';
 import { tagPage, tagsPage } from './tagPages.ts';
 
 /** Favicon, CSS and JavaScript, copied as they are to the site folder. */
@@ -54,6 +55,8 @@ export async function buildSite({ config, outputPath, previewCachePath, log }: B
   for (const tag of library.tags) {
     await writeOutputFile(join(outputPath, 'tag', `${tag}.html`), tagPage(tag, entries, config));
   }
+  await writeOutputFile(join(outputPath, 'sitemap.xml'), sitemap(library, config.siteUrl));
+  await writeOutputFile(join(outputPath, 'robots.txt'), robotsTxt(config.siteUrl));
   return { photoEntries: entries.length, albums: library.albums.length, previewsGenerated };
 }
 

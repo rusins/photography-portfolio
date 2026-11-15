@@ -389,3 +389,42 @@ describe('buildSite License page', () => {
     await expect(readPage('license.html')).rejects.toThrow('ENOENT');
   });
 });
+
+describe('buildSite sitemap and robots.txt', () => {
+  let readPage: (path: string) => Promise<string>;
+
+  beforeAll(async () => {
+    ({ readPage } = await buildLibrary({
+      photos: { '/2023/Zvārtes Iezis': { tags: ['autumn'] }, '/b': {} },
+      albums: { 'Trips.album': '/b', '2023/Latvia & more.album': 'Zvārtes Iezis' },
+    }));
+  });
+
+  test('the sitemap lists the main pages without /random, then every Album and Photo entry page', async () => {
+    const sitemap = await readPage('sitemap.xml');
+    const locs = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
+    expect(locs.slice(0, 4)).toEqual([
+      'https://photos.example',
+      'https://photos.example/recent',
+      'https://photos.example/albums',
+      'https://photos.example/tags',
+    ]);
+    expect(locs.slice(4).toSorted()).toEqual([
+      'https://photos.example/album/2023/Latvia%20%26%20more',
+      'https://photos.example/album/Trips',
+      'https://photos.example/image/2023/Zv%C4%81rtes%20Iezis',
+      'https://photos.example/image/b',
+    ]);
+    expect(sitemap).not.toContain('random');
+  });
+
+  test('the sitemap has the old format', async () => {
+    expect(await readPage('sitemap.xml')).toMatch(
+      /^<\?xml version="1.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">\n  <url>\n    <loc>https:\/\/photos\.example<\/loc>\n    <changefreq>monthly<\/changefreq>\n  <\/url>\n  <url>\n[\s\S]*<\/url>\n<\/urlset>$/,
+    );
+  });
+
+  test('robots.txt points at the sitemap', async () => {
+    expect(await readPage('robots.txt')).toBe('Sitemap: https://photos.example/sitemap.xml');
+  });
+});
